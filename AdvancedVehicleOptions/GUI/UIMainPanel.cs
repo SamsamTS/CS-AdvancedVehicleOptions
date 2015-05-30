@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using ColossalFramework.UI;
 
+using System;
+
 namespace AdvancedVehicleOptions.GUI
 {
     public class UIMainPanel : UIPanel
@@ -8,11 +10,19 @@ namespace AdvancedVehicleOptions.GUI
         private UITitleBar m_title;
         private UIScrollablePanel m_scrollablePanel;
         private UIPanel m_panelForScrollPanel;
-        private UIButton m_cancel;
-        private UIButton m_apply;
+        private UIButton m_reload;
+        private UIButton m_save;
+
+        private UISprite m_button;
 
         private UIOptionPanel m_optionPanel;
         private VehicleOptions[] m_optionsList;
+
+        public static readonly string[] vehicleIconList =
+            { "IconCitizenVehicle", "IconServiceVehicle", "IconServiceVehicle", "IconCargoShip",
+              "ToolbarIconPolice", "InfoIconFireSafety", "ToolbarIconHealthcare", "InfoIconGarbage",
+              "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTrain",
+              "SubBarPublicTransportShip", "SubBarPublicTransportPlane" };
 
         public UIOptionPanel optionPanel
         {
@@ -25,6 +35,8 @@ namespace AdvancedVehicleOptions.GUI
             set
             {
                 m_optionsList = value;
+                Array.Sort(m_optionsList);
+
                 PopulateList();
             }
         }
@@ -34,11 +46,11 @@ namespace AdvancedVehicleOptions.GUI
             base.Start();
 
             backgroundSprite = "UnlockingPanel2";
-            isVisible = true;
+            isVisible = false;
             canFocus = true;
             isInteractive = true;
             width = 450;
-            height = 400;
+            height = 395;
             relativePosition = new Vector3(Mathf.Floor((GetUIView().fixedWidth - width - 315) / 2), Mathf.Floor((GetUIView().fixedHeight - height) / 2));
 
             m_optionPanel = (UIOptionPanel)GetUIView().AddUIComponent(typeof(UIOptionPanel));
@@ -46,12 +58,31 @@ namespace AdvancedVehicleOptions.GUI
             SetupControls();
 
             PopulateList();
+
+            UITabstrip toolStrip = GetUIView().FindUIComponent<UITabstrip>("MainToolstrip");
+            m_button = toolStrip.AddUIComponent<UISprite>();
+            m_button.spriteName = "IconCitizenVehicle";
+            m_button.size = m_button.spriteInfo.pixelSize;
+            m_button.relativePosition = new Vector3(0, 5);
+
+            GetUIView().FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
+
+            m_button.eventClick += new MouseEventHandler((c, p) =>
+            {
+                if (p != null) p.Use();
+                isVisible = !isVisible;
+                
+                m_optionPanel.isVisible = false;
+                OnSelectedItemChanged(null, null);
+            });
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
 
+            m_button.parent.RemoveUIComponent(m_button);
+            Destroy(m_button);
             Destroy(m_optionPanel);
         }
 
@@ -59,10 +90,12 @@ namespace AdvancedVehicleOptions.GUI
         {
             float offset = 40f;
 
+            // Title Bar
             m_title = AddUIComponent<UITitleBar>();
             m_title.iconSprite = "IconCitizenVehicle";
             m_title.title = "Advanced Vehicle Options";
 
+            // Scroll Panel (from Extended Public Transport UI)
             m_panelForScrollPanel = AddUIComponent<UIPanel>();
             m_panelForScrollPanel.gameObject.AddComponent<UICustomControl>();
 
@@ -78,7 +111,7 @@ namespace AdvancedVehicleOptions.GUI
             m_scrollablePanel.autoLayout = true;
             m_scrollablePanel.autoLayoutDirection = LayoutDirection.Vertical;
             m_scrollablePanel.autoLayoutStart = LayoutStart.TopLeft;
-            m_scrollablePanel.autoLayoutPadding = new RectOffset(0, 0, 1, 1);
+            m_scrollablePanel.autoLayoutPadding = new RectOffset(0, 0, 0, 0);
             m_scrollablePanel.clipChildren = true;
 
             m_scrollablePanel.pivot = UIPivotPoint.TopLeft;
@@ -107,7 +140,7 @@ namespace AdvancedVehicleOptions.GUI
             thumbSprite.relativePosition = Vector2.zero;
             thumbSprite.fillDirection = UIFillDirection.Vertical;
             thumbSprite.autoSize = true;
-            thumbSprite.width = thumbSprite.parent.width;
+            thumbSprite.width = thumbSprite.parent.width - 8;
             thumbSprite.spriteName = "ScrollbarThumb";
 
             scrollbar.thumbObject = thumbSprite;
@@ -116,21 +149,28 @@ namespace AdvancedVehicleOptions.GUI
             m_scrollablePanel.eventMouseWheel += (component, param) =>
             {
                 var sign = Mathf.Sign(param.wheelDelta);
-                m_scrollablePanel.scrollPosition += new Vector2(0, sign * (-1) * 20);
+                m_scrollablePanel.scrollPosition += new Vector2(0, sign * (-1) * 40);
             };
 
+            // Configuration file buttons
             UILabel configLabel = this.AddUIComponent<UILabel>();
             configLabel.text = "Configuration file:";
             configLabel.textScale = 0.9f;
             configLabel.relativePosition = new Vector3(10, height - 60);
 
-            m_cancel = UIUtils.CreateButton(this);
-            m_cancel.text = "Reload";
-            m_cancel.relativePosition = new Vector3(10, height - 40);
+            m_reload = UIUtils.CreateButton(this);
+            m_reload.text = "Reload";
+            m_reload.relativePosition = new Vector3(10, height - 40);
 
-            m_apply = UIUtils.CreateButton(this);
-            m_apply.text = "Save";
-            m_apply.relativePosition = new Vector3(105, height - 40);
+            m_save = UIUtils.CreateButton(this);
+            m_save.text = "Save";
+            m_save.relativePosition = new Vector3(105, height - 40);
+
+            // Event handlers
+            m_title.closeButton.eventClick += new MouseEventHandler((c, t) => { m_optionPanel.isVisible = false; });
+            m_optionPanel.eventEnableCheckChanged += new PropertyChangedEventHandler<bool>(OnEnableStateChanged);
+            m_reload.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.LoadConfig());
+            m_save.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.SaveConfig());
         }
 
         private UIVehicleItem[] m_itemList;
@@ -139,7 +179,7 @@ namespace AdvancedVehicleOptions.GUI
         {
             ClearList();
 
-            if (m_optionsList == null) return;
+            if (m_optionsList == null || m_scrollablePanel == null) return;
 
             m_itemList = new UIVehicleItem[m_optionsList.Length];
             for (int i = 0; i < m_optionsList.Length; i++)
@@ -147,11 +187,13 @@ namespace AdvancedVehicleOptions.GUI
                 m_itemList[i] = m_scrollablePanel.AddUIComponent<UIVehicleItem>();
 
                 if ((i % 2) == 1)
-                    m_itemList[i].backgroundSprite = "UnlockingItemBackground";
+                {
+                    m_itemList[i].background.backgroundSprite = "UnlockingItemBackground";
+                    m_itemList[i].background.color = new Color32(0, 0, 0, 128);
+                }
 
                 m_itemList[i].eventClick += new MouseEventHandler(OnSelectedItemChanged);
                 m_itemList[i].options = m_optionsList[i];
-                m_itemList[i].optionPanel = m_optionPanel;
             }
         }
 
@@ -160,7 +202,12 @@ namespace AdvancedVehicleOptions.GUI
             if (m_itemList == null) return;
 
             for (int i = 0; i < m_itemList.Length; i++)
-                Destroy(m_itemList[i]);
+            {
+                m_itemList[i].isVisible = false;
+                RemoveUIComponent(m_itemList[i]);
+            }
+
+            m_itemList = null;
         }
 
         public void OnSelectedItemChanged(UIComponent component, UIMouseEventParameter p)
@@ -168,12 +215,31 @@ namespace AdvancedVehicleOptions.GUI
             for (int i = 0; i < m_itemList.Length; i++)
             {
                 if ((i % 2) == 1)
-                    m_itemList[i].backgroundSprite = "UnlockingItemBackground";
+                {
+                    m_itemList[i].background.backgroundSprite = "UnlockingItemBackground";
+                    m_itemList[i].background.color = new Color32(0, 0, 0, 128);
+                }
                 else
-                    m_itemList[i].backgroundSprite = "";
+                {
+                    m_itemList[i].background.backgroundSprite = null;
+                }
+
+                m_itemList[i].Refresh();
             }
 
-            ((UIVehicleItem)component).backgroundSprite = "UnlockingItemBackgroundPressed";
+            if (component == null) return;
+            UIVehicleItem item = (UIVehicleItem)component;
+            item.background.backgroundSprite = "ListItemHighlight";
+            item.background.color = new Color32(255, 255, 255, 255);
+
+            m_optionPanel.Show(item.options);
+            m_optionPanel.relativePosition = new Vector3(relativePosition.x + width + 5, relativePosition.y);
+        }
+
+        public void OnEnableStateChanged(UIComponent component, bool state)
+        {
+            for (int i = 0; i < m_itemList.Length; i++)
+                m_itemList[i].Refresh();
         }
     }
 

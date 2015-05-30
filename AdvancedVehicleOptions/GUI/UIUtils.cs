@@ -5,6 +5,10 @@ namespace AdvancedVehicleOptions.GUI
 {
     public class UIUtils
     {
+        // Figuring all this was a pain (no documentation whatsoever)
+        // So if your are using it for your mod consider thanking me (SamsamTS)
+        // Extended Public Transport UI's code helped me a lot so thanks a lot AcidFire
+
         public static UIButton CreateButton(UIComponent parent)
         {
             UIButton button = (UIButton)parent.AddUIComponent<UIButton>();
@@ -68,6 +72,8 @@ namespace AdvancedVehicleOptions.GUI
         public static UIColorField CreateColorField(UIComponent parent)
         {
             //UIColorField colorField = parent.AddUIComponent<UIColorField>();
+            // Creating a ColorField from scratch is tricky. Cloning an existing one instead.
+            // Probably doesn't work when on main menu screen and such as no ColorField exists.
             UIColorField colorField = UnityEngine.Object.Instantiate<GameObject>(UnityEngine.Object.FindObjectOfType<UIColorField>().gameObject).GetComponent<UIColorField>();
             parent.AttachUIComponent(colorField.gameObject);
 
@@ -78,6 +84,25 @@ namespace AdvancedVehicleOptions.GUI
             colorField.pickerPosition = UIColorField.ColorPickerPosition.RightAbove;
 
             return colorField;
+        }
+
+        public static void ResizeIcon(UISprite icon, Vector2 maxSize)
+        {
+            if (icon.height == 0) return;
+
+            float ratio = icon.width / icon.height;
+
+            if (icon.width > maxSize.x)
+            {
+                icon.width = maxSize.x;
+                icon.height = maxSize.x / ratio;
+            }
+
+            if (icon.height > maxSize.y)
+            {
+                icon.height = maxSize.y;
+                icon.width = maxSize.y * ratio;
+            }
         }
     }
 }

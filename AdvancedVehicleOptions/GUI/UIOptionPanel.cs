@@ -22,11 +22,15 @@ namespace AdvancedVehicleOptions.GUI
 
         private VehicleOptions m_options = null;
 
+        private bool m_initialized = false;
+
+        public event PropertyChangedEventHandler<bool> eventEnableCheckChanged;
+
         public override void Start()
         {
             base.Start();
             backgroundSprite = "UnlockingPanel2";
-            isVisible = true;
+            isVisible = false;
             canFocus = true;
             isInteractive = true;
             width = 315;
@@ -40,10 +44,12 @@ namespace AdvancedVehicleOptions.GUI
 
         public void Show(VehicleOptions options)
         {
+            m_initialized = false;
+
             m_options = options;
 
             m_title.title = options.localizedName;
-            m_maxSpeed.text = options.maxSpeed.ToString();
+            m_maxSpeed.text = Mathf.RoundToInt(options.maxSpeed * 5).ToString();
             m_color0.selectedColor = options.color0;
             m_color1.selectedColor = options.color1;
             m_color2.selectedColor = options.color2;
@@ -54,14 +60,14 @@ namespace AdvancedVehicleOptions.GUI
             m_color3_hex.text = options.color3.ToString();
             m_enabled.isChecked = options.enabled;
             m_addBackEngine.isChecked = options.addBackEngine;
-            m_addBackEngine.isVisible = (options.vehicleType == VehicleInfo.VehicleType.Train);
+            m_addBackEngine.isVisible = (options.vehicleType == VehicleInfo.VehicleType.Train) && options.hasTrailer;
 
-            m_title.iconSprite = options.icon;
+            m_title.iconSprite = UIMainPanel.vehicleIconList[(int)options.category];
 
             Show();
-        }
 
-        public event PropertyChangedEventHandler<bool> eventEnableStateChanged;
+            m_initialized = true;
+        }
 
         private void SetupControls()
         {
@@ -87,10 +93,14 @@ namespace AdvancedVehicleOptions.GUI
             maxSpeedLabel.relativePosition = new Vector3(20, offset + 15);
 
             m_maxSpeed = UIUtils.CreateTextField(this);
-            m_maxSpeed.allowFloats = true;
             m_maxSpeed.numericalOnly = true;
-            m_maxSpeed.width = 130;
+            m_maxSpeed.width = 75;
             m_maxSpeed.relativePosition = new Vector3(20, offset + 35);
+
+            UILabel kmh = this.AddUIComponent<UILabel>();
+            kmh.text = "km/h";
+            kmh.textScale = 0.9f;
+            kmh.relativePosition = new Vector3(100, offset + 40);
 
             // Colors
             UILabel colorsLabel = this.AddUIComponent<UILabel>();
@@ -173,27 +183,37 @@ namespace AdvancedVehicleOptions.GUI
 
         protected void OnCheckChanged(UIComponent component, bool state)
         {
-            if (m_options.enabled != m_enabled.isChecked)
+            if (!m_initialized || m_options == null) return;
+            m_initialized = false;
+
+            if (component == m_enabled && m_options.enabled != state)
             {
-                m_options.enabled = m_enabled.isChecked;
-                eventEnableStateChanged(this, state);
+                m_options.enabled = state;
+                AdvancedVehicleOptions.ApplySpawning(m_options);
+                eventEnableCheckChanged(this, state);
             }
             else
+            {
                 m_options.addBackEngine = m_addBackEngine.isChecked;
-
-            AdvancedVehicleOptions.ApplyOptions(m_options);
+                AdvancedVehicleOptions.ApplyBackEngine(m_options);
+            }
+            m_initialized = true;
         }
 
         protected void OnMaxSpeedSubmitted(UIComponent component, string text)
         {
-            m_options.maxSpeed = float.Parse(text);
+            if (!m_initialized || m_options == null) return;
+            m_initialized = false;
 
-            AdvancedVehicleOptions.ApplyOptions(m_options);
+            m_options.maxSpeed = float.Parse(text) / 5f;
+
+            AdvancedVehicleOptions.ApplyMaxSpeed(m_options);
         }
 
         protected void OnColorChanged(UIComponent component, Color color)
         {
-            if (m_options == null) return;
+            if (!m_initialized || m_options == null) return;
+            m_initialized = false;
 
             m_options.color0 = m_color0.selectedColor;
             m_options.color1 = m_color1.selectedColor;
@@ -205,12 +225,14 @@ namespace AdvancedVehicleOptions.GUI
             m_color2_hex.text = m_options.color2.ToString();
             m_color3_hex.text = m_options.color3.ToString();
 
-            AdvancedVehicleOptions.ApplyOptions(m_options);
+            AdvancedVehicleOptions.ApplyColors(m_options);
+            m_initialized = true;
         }
 
         protected void OnColorHexSubmitted(UIComponent component, string text)
         {
-            if (m_options == null) return;
+            if (!m_initialized || m_options == null) return;
+            m_initialized = false;
 
             // Is text a valid color?
             if(text != "000000" && new HexaColor(text).ToString() == "000000")
@@ -238,7 +260,8 @@ namespace AdvancedVehicleOptions.GUI
             m_color2.selectedColor = m_options.color2;
             m_color3.selectedColor = m_options.color3;
 
-            AdvancedVehicleOptions.ApplyOptions(m_options);
+            AdvancedVehicleOptions.ApplyColors(m_options);
+            m_initialized = true;
         }
 
         protected void OnClearVehicleClicked(UIComponent component, UIMouseEventParameter p)

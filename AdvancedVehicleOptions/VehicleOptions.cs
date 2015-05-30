@@ -1,11 +1,12 @@
 ﻿using UnityEngine;
 
+using System;
 using System.Text;
 using System.Xml.Serialization;
 
 namespace AdvancedVehicleOptions
 {
-    public class VehicleOptions
+    public class VehicleOptions : IComparable
     {
         [XmlAttribute("name")]
         public string name;
@@ -23,58 +24,90 @@ namespace AdvancedVehicleOptions
         [XmlIgnore]
         public ItemClass itemClass;
         [XmlIgnore]
+        public bool hasTrailer;
+        [XmlIgnore]
         public string localizedName;
+        [XmlIgnore]
+        private Category m_category = Category.None;
 
-        public string icon
+        public enum Category
+        {
+            None = -1,
+            Citizen,
+            Industrial,
+            CargoTrain,
+            CargoShip,
+            Police,
+            FireSafety,
+            Healthcare,
+            Garbage,
+            TransportBus,
+            TransportMetro,
+            TransportTrain,
+            TransportShip,
+            TransportPlane
+        }
+
+        public Category category
         {
             get
             {
-                string icon;
+                if (m_category > Category.None) return m_category;
+
                 switch (itemClass.m_service)
                 {
-                    case ItemClass.Service.FireDepartment:
-                        icon = "InfoIconFireSafety";
-                        break;
-                    case ItemClass.Service.Garbage:
-                        icon = "InfoIconGarbage";
-                        break;
-                    case ItemClass.Service.HealthCare:
-                        icon = "ToolbarIconHealthcare";
-                        break;
                     case ItemClass.Service.PoliceDepartment:
-                        icon = "ToolbarIconPolice";
-                        break;
-                    default:
-                        if (vehicleType == VehicleInfo.VehicleType.Ship)
-                            icon = "IconCargoShip";
-                        else if (vehicleType == VehicleInfo.VehicleType.Train)
-                            icon = "IconServiceVehicle"; // No cargo train icon available
-                        else
-                            icon = "IconCitizenVehicle";
-                        break;
+                        return Category.Police;
+                    case ItemClass.Service.FireDepartment:
+                        return Category.FireSafety;
+                    case ItemClass.Service.HealthCare:
+                        return Category.Healthcare;
+                    case ItemClass.Service.Garbage:
+                        return Category.Garbage;
                 }
 
                 switch (itemClass.m_subService)
                 {
                     case ItemClass.SubService.PublicTransportBus:
-                        icon = "SubBarPublicTransportBus";
-                        break;
+                        return Category.TransportBus;
                     case ItemClass.SubService.PublicTransportMetro:
-                        icon = "SubBarPublicTransportMetro";
-                        break;
-                    case ItemClass.SubService.PublicTransportPlane:
-                        icon = "SubBarPublicTransportPlane";
-                        break;
-                    case ItemClass.SubService.PublicTransportShip:
-                        icon = "SubBarPublicTransportShip";
-                        break;
+                        return Category.TransportMetro;
                     case ItemClass.SubService.PublicTransportTrain:
-                        icon = "SubBarPublicTransportTrain";
-                        break;
+                        return Category.TransportTrain;
+                    case ItemClass.SubService.PublicTransportShip:
+                        return Category.TransportShip;
+                    case ItemClass.SubService.PublicTransportPlane:
+                        return Category.TransportPlane;
                 }
 
-                return icon;
+                switch (vehicleType)
+                {
+                    case VehicleInfo.VehicleType.Train:
+                        return Category.CargoTrain;
+                    case VehicleInfo.VehicleType.Ship:
+                        return Category.CargoShip;
+                }
+
+                switch (itemClass.m_service)
+                {
+                    case ItemClass.Service.Industrial:
+                        return Category.Industrial;
+                }
+
+                return Category.Citizen;
             }
+        }
+
+        public int CompareTo(object o)
+        {
+            if (o == null) return 1;
+
+            VehicleOptions options = (VehicleOptions)o;
+
+            int delta = category - options.category;
+            if (delta == 0) return localizedName.CompareTo(options.localizedName);
+
+            return delta;
         }
     }
 
@@ -91,6 +124,8 @@ namespace AdvancedVehicleOptions
 
             set
             {
+                value = value.Trim().Replace("#", "");
+
                 if (value.Length != 6) return;
 
                 try

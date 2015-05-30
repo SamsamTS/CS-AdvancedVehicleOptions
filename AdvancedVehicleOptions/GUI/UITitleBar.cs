@@ -13,7 +13,22 @@ namespace AdvancedVehicleOptions.GUI
         public string iconSprite
         {
             get { return m_icon.spriteName; }
-            set { m_icon.spriteName = value; }
+            set {
+                if (m_icon == null) return;
+                m_icon.spriteName = value;
+
+                if (m_icon.spriteInfo != null)
+                {
+                    m_icon.size = m_icon.spriteInfo.pixelSize;
+                    UIUtils.ResizeIcon(m_icon, new Vector2(32, 32));
+                    m_icon.relativePosition = new Vector3(10, Mathf.Floor((height - m_icon.height) / 2));
+                }
+            }
+        }
+
+        public UIButton closeButton
+        {
+            get { return m_close; }
         }
 
         public string title
