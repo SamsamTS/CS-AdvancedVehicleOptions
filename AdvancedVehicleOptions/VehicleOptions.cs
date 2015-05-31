@@ -38,7 +38,7 @@ namespace AdvancedVehicleOptions
         public HexaColor color2;
         public HexaColor color3;
 
-        private VehicleInfo m_prefab;
+        private VehicleInfo m_prefab = null;
         private Category m_category = Category.None;
         private ItemClass.Placement m_placementStyle;
         private string m_localizedName;
@@ -120,11 +120,11 @@ namespace AdvancedVehicleOptions
             m_prefab = prefab;
             m_placementStyle = prefab.m_placementStyle;
 
-            m_localizedName = prefab.name;
-            if (name.Contains('.'))
+            m_localizedName = m_prefab.name;
+            if (m_localizedName.Contains('.'))
             {
                 // Removes the steam ID and trailing _Data from the name
-                m_localizedName = name.Substring(name.IndexOf('.') + 1).Replace("_Data", "");
+                m_localizedName = m_localizedName.Substring(m_localizedName.IndexOf('.') + 1).Replace("_Data", "");
             }
             /*else
             {

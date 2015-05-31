@@ -20,7 +20,7 @@ namespace AdvancedVehicleOptions
         #region IUserMod implementation
         public string Name
         {
-            get { return "Advanced Vehicle Options 1.0.1"; }
+            get { return "Advanced Vehicle Options 1.0.2"; }
         }
 
         public string Description
@@ -247,10 +247,10 @@ namespace AdvancedVehicleOptions
 
         public static void ApplyMaxSpeed(VehicleOptions options)
         {
-            if (options.prefab.m_vehicleAI is CarAI)
+            //if (!IsAICustom(options.prefab.m_vehicleAI))
                 options.prefab.m_maxSpeed = options.maxSpeed;
-            else
-                DebugUtils.Log("Max Speed not applied: custom CarAI detected");
+            //else
+                //DebugUtils.Log("Max Speed not applied: custom Vehicle AI detected");
         }
 
         public static void ApplyColors(VehicleOptions options)
@@ -332,14 +332,14 @@ namespace AdvancedVehicleOptions
         /// </summary>
         private static void CheckNewVehicles()
         {
-            List<VehicleOptions> optionsList = new List<VehicleOptions>(m_options);
+            List<VehicleOptions> optionsList = new List<VehicleOptions>();
+            if(m_options != null) optionsList.AddRange(m_options);
 
             for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
             {
                 VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
 
-                if (prefab == null) continue;
-                if (m_options.First<VehicleOptions>() != null) continue;
+                if (prefab == null || ContainsPrefab(prefab)) continue;
 
                 // New vehicle
                 VehicleOptions options = new VehicleOptions();
@@ -365,6 +365,29 @@ namespace AdvancedVehicleOptions
             }
 
             m_options = optionsList.ToArray();
+        }
+
+        private static bool ContainsPrefab(VehicleInfo prefab)
+        {
+            if (m_options == null) return false;
+            for (int i = 0; i < m_options.Length; i++)
+            {
+                if (m_options[i].prefab == prefab) return true;
+            }
+            return false;
+        }
+
+        private static bool IsAICustom(VehicleAI ai)
+        {
+            Type type = ai.GetType();
+            return (type != typeof(AmbulanceAI) ||
+                type != typeof(BusAI) ||
+                type != typeof(CargoTruckAI) ||
+                type != typeof(FireTruckAI) ||
+                type != typeof(GarbageTruckAI) ||
+                type != typeof(HearseAI) ||
+                type != typeof(PassengerCarAI) ||
+                type != typeof(PoliceCarAI));
         }
     }
 }
