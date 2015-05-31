@@ -17,6 +17,7 @@ namespace AdvancedVehicleOptions.GUI
 
         private UIOptionPanel m_optionPanel;
         private VehicleOptions[] m_optionsList;
+        private UIVehicleItem[] m_itemList;
 
         public static readonly string[] vehicleIconList =
             { "IconCitizenVehicle", "IconServiceVehicle", "IconServiceVehicle", "IconCargoShip",
@@ -75,6 +76,8 @@ namespace AdvancedVehicleOptions.GUI
                 m_optionPanel.isVisible = false;
                 OnSelectedItemChanged(null, null);
             });
+
+            AdvancedVehicleOptions.LoadConfig();
         }
 
         public override void OnDestroy()
@@ -173,8 +176,6 @@ namespace AdvancedVehicleOptions.GUI
             m_save.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.SaveConfig());
         }
 
-        private UIVehicleItem[] m_itemList;
-
         private void PopulateList()
         {
             ClearList();
@@ -210,7 +211,7 @@ namespace AdvancedVehicleOptions.GUI
             m_itemList = null;
         }
 
-        public void OnSelectedItemChanged(UIComponent component, UIMouseEventParameter p)
+        protected void OnSelectedItemChanged(UIComponent component, UIMouseEventParameter p)
         {
             for (int i = 0; i < m_itemList.Length; i++)
             {
@@ -236,7 +237,7 @@ namespace AdvancedVehicleOptions.GUI
             m_optionPanel.relativePosition = new Vector3(relativePosition.x + width + 5, relativePosition.y);
         }
 
-        public void OnEnableStateChanged(UIComponent component, bool state)
+        protected void OnEnableStateChanged(UIComponent component, bool state)
         {
             for (int i = 0; i < m_itemList.Length; i++)
                 m_itemList[i].Refresh();

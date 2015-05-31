@@ -20,7 +20,7 @@ namespace AdvancedVehicleOptions
         #region IUserMod implementation
         public string Name
         {
-            get { return "Advanced Vehicle Options 1.0"; }
+            get { return "Advanced Vehicle Options 1.0.1"; }
         }
 
         public string Description
@@ -29,10 +29,16 @@ namespace AdvancedVehicleOptions
         }
         #endregion
 
-        private static Dictionary<VehicleOptions, VehicleInfo> m_vehicles = new Dictionary<VehicleOptions,VehicleInfo>();
-        private static ItemClass m_emptyItemClass = new ItemClass();
-                
+        private static VehicleOptions[] m_options;
         private static GUI.UIMainPanel m_mainPanel;
+
+        private static List<VehicleInfo> m_removeList = new List<VehicleInfo>();
+        private static bool m_removeThreadRunning = false;
+
+        private static List<VehicleInfo> m_removeParkedList = new List<VehicleInfo>();
+        private static bool m_removeParkedThreadRunning = false;
+
+        private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private const string m_fileName = "AdvancedVehicleOptions.xml";
                 
@@ -50,12 +56,8 @@ namespace AdvancedVehicleOptions
             UIView view = UIView.GetAView();
             m_mainPanel = (GUI.UIMainPanel)view.AddUIComponent(typeof(GUI.UIMainPanel));
 
-            m_emptyItemClass.m_service = ItemClass.Service.None;
-            m_emptyItemClass.m_subService = ItemClass.SubService.None;
-            m_emptyItemClass.m_level = ItemClass.Level.None;
-
             // Loading the configuration
-            LoadConfig();
+            // LoadConfig();
         }
 
         /// <summary>
@@ -63,7 +65,7 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public override void OnLevelUnloading()
         {
-            RestoreItemClasses();
+            SaveConfig();
             GameObject.Destroy(m_mainPanel);
         }
         #endregion
@@ -73,59 +75,29 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public static void LoadConfig()
         {
-            RestoreItemClasses();
-            m_vehicles.Clear();
+            m_options = null; // Clear all options
 
             if (!File.Exists(m_fileName))
             {
                 DebugUtils.Log("Configuration file not found. Creating new configuration file.");
-                CheckNewVehicles();
 
-                // Loading old mods saves
-                List<OldMods.Vehicle> removerList = OldMods.VehicleRemoverMod.LoadConfig();
-                List<OldMods.VehicleColorInfo> colorList = OldMods.VehicleColorChangerMod.LoadConfig();
-
-                if(removerList != null || colorList != null)
-                {
-                    foreach(VehicleOptions options in m_vehicles.Keys)
-                    {
-                        if(removerList != null)
-                        {
-                            OldMods.Vehicle vehicle = removerList.Find((v) => { return v.name == options.name; });
-                            if (vehicle.name == options.name) options.enabled = vehicle.enabled;
-                        }
-
-                        if (colorList != null)
-                        {
-                            OldMods.VehicleColorInfo vehicle = colorList.Find((v) => { return v.name == options.name; });
-                            if (vehicle != null && vehicle.name == options.name)
-                            {
-                                options.color0 = vehicle.color0;
-                                options.color1 = vehicle.color1;
-                                options.color2 = vehicle.color2;
-                                options.color3 = vehicle.color3;
-                            }
-                        }
-                    }
-                }
-                
-                SaveConfig();
+                CreateConfig();
+                ApplyOptions();
 
                 // Update GUI list
-                ApplyOptions();
-                m_mainPanel.optionList = m_vehicles.Keys.ToArray();
+                m_mainPanel.optionList = m_options;
                 return;
             }
 
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(VehicleOptions[]));
-            VehicleOptions[] optionsList = null;
+            VehicleOptions[] options = null;
 
             try
             {
                 // Trying to Deserialize the configuration file
                 using (FileStream stream = new FileStream(m_fileName, FileMode.Open))
                 {
-                    optionsList = xmlSerializer.Deserialize(stream) as VehicleOptions[];
+                    options = xmlSerializer.Deserialize(stream) as VehicleOptions[];
                 }
             }
             catch (Exception e)
@@ -136,44 +108,33 @@ namespace AdvancedVehicleOptions
                 return;
             }
 
-            if (optionsList == null)
+            if (options == null)
             {
                 DebugUtils.Warning("Couldn't load configuration (vehicle list is null)");
                 return;
             }
 
-            // Filling dictionary
-            for (uint i = 0; i < optionsList.Length; i++)
+            // Remove unneeded options
+            List<VehicleOptions> optionsList = new List<VehicleOptions>();
+
+            for (uint i = 0; i < options.Length; i++)
             {
-                VehicleInfo prefab = PrefabCollection<VehicleInfo>.FindLoaded(optionsList[i].name);
+                VehicleInfo prefab = PrefabCollection<VehicleInfo>.FindLoaded(options[i].name);
                 if (prefab != null)
                 {
-                    optionsList[i].vehicleType = prefab.m_vehicleType;
-                    optionsList[i].itemClass = prefab.m_class;
-                    optionsList[i].hasTrailer = prefab.m_trailers != null && prefab.m_trailers.Length > 0;
-                    optionsList[i].localizedName = GetLocalizedName(prefab);
-
-                    m_vehicles.Add(optionsList[i], prefab);
+                    options[i].SetPrefab(prefab);
+                    optionsList.Add(options[i]);
                 }
             }
+
+            m_options = optionsList.ToArray();
 
             // Checking for new vehicles
             CheckNewVehicles();
 
             // Update GUI list
             ApplyOptions();
-            m_mainPanel.optionList = m_vehicles.Keys.ToArray();
-        }
-
-        public static void ApplyOptions()
-        {
-            foreach(VehicleOptions options in m_vehicles.Keys)
-            {
-                ApplyMaxSpeed(options);
-                ApplyColors(options);
-                ApplySpawning(options);
-                ApplyBackEngine(options);
-            }
+            m_mainPanel.optionList = m_options;
         }
 
         /// <summary>
@@ -181,7 +142,7 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public static void SaveConfig()
         {
-            if (m_vehicles.Count == 0) return;
+            if (m_options == null) return;
 
             try
             {
@@ -189,7 +150,7 @@ namespace AdvancedVehicleOptions
                 {
                     stream.SetLength(0); // Emptying the file !!!
                     XmlSerializer xmlSerializer = new XmlSerializer(typeof(VehicleOptions[]));
-                    xmlSerializer.Serialize(stream, m_vehicles.Keys.ToArray());
+                    xmlSerializer.Serialize(stream, m_options);
                 }
             }
             catch (Exception e)
@@ -201,30 +162,23 @@ namespace AdvancedVehicleOptions
 
         public static void ClearVehicles(VehicleOptions options, bool parked)
         {
-            if (m_vehicles.Count == 0) return;
-
-            VehicleInfo prefab = m_vehicles[options];
-
             if (parked)
             {
-                if (!m_removeParkedList.Contains(prefab))
+                if (!m_removeParkedList.Contains(options.prefab))
                 {
-                    m_removeParkedList.Add(prefab);
+                    m_removeParkedList.Add(options.prefab);
                     if (!m_removeParkedThreadRunning) new EnumerableActionThread(ActionRemoveParked);
                 }
             }
             else
             {
-                if (!m_removeList.Contains(prefab))
+                if (!m_removeList.Contains(options.prefab))
                 {
-                    m_removeList.Add(prefab);
+                    m_removeList.Add(options.prefab);
                     if (!m_removeThreadRunning) new EnumerableActionThread(ActionRemoveExisting);
                 }
             }
         }
-
-        private static List<VehicleInfo> m_removeList = new List<VehicleInfo>();
-        private static bool m_removeThreadRunning = false;
 
         public static IEnumerator ActionRemoveExisting(ThreadBase t)
         {
@@ -252,9 +206,6 @@ namespace AdvancedVehicleOptions
             m_removeThreadRunning = false;
         }
 
-        private static List<VehicleInfo> m_removeParkedList = new List<VehicleInfo>();
-        private static bool m_removeParkedThreadRunning = false;
-
         public static IEnumerator ActionRemoveParked(ThreadBase t)
         {
             m_removeParkedThreadRunning = true;
@@ -281,72 +232,99 @@ namespace AdvancedVehicleOptions
             m_removeParkedThreadRunning = false;
         }
 
-        public static void ApplyColors(VehicleOptions options)
+        #region Apply
+       
+        public static void ApplyOptions()
         {
-            if (m_vehicles.Count == 0) return;
-
-            VehicleInfo prefab = m_vehicles[options];
-
-            prefab.m_color0 = options.color0;
-            prefab.m_color1 = options.color1;
-            prefab.m_color2 = options.color2;
-            prefab.m_color3 = options.color3;
-        }
-
-        public static void ApplySpawning(VehicleOptions options)
-        {
-            if (m_vehicles.Count == 0) return;
-
-            VehicleInfo prefab = m_vehicles[options];
-
-            ItemClass newItemClass = options.enabled ? options.itemClass : m_emptyItemClass;
-
-            if (prefab.m_class == newItemClass) return;
-            prefab.m_class = newItemClass;
-
-            // Make transfer vehicle dirty
-            typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(Singleton<VehicleManager>.instance, true);
+            for (int i = 0; i < m_options.Length; i++)
+            {
+                ApplyMaxSpeed(m_options[i]);
+                ApplyColors(m_options[i]);
+                ApplySpawning(m_options[i]);
+                ApplyBackEngine(m_options[i]);
+            }
         }
 
         public static void ApplyMaxSpeed(VehicleOptions options)
         {
-            if (m_vehicles.Count == 0) return;
+            if (options.prefab.m_vehicleAI is CarAI)
+                options.prefab.m_maxSpeed = options.maxSpeed;
+            else
+                DebugUtils.Log("Max Speed not applied: custom CarAI detected");
+        }
 
-            VehicleInfo prefab = m_vehicles[options];
-            prefab.m_maxSpeed = options.maxSpeed;
+        public static void ApplyColors(VehicleOptions options)
+        {
+            options.prefab.m_color0 = options.color0;
+            options.prefab.m_color1 = options.color1;
+            options.prefab.m_color2 = options.color2;
+            options.prefab.m_color3 = options.color3;
+        }
+        
+        public static void ApplySpawning(VehicleOptions options)
+        {
+            options.prefab.m_placementStyle = options.enabled ? options.placementStyle : ItemClass.Placement.Manual;
+
+            // Make transfer vehicle dirty
+            m_transferVehiclesDirty.SetValue(Singleton<VehicleManager>.instance, true);
         }
 
         public static void ApplyBackEngine(VehicleOptions options)
         {
-            if (m_vehicles.Count == 0 || !options.hasTrailer) return;
-
-            VehicleInfo prefab = m_vehicles[options];
-
             // Is it a train?
-            if (prefab.m_trailers == null || prefab.m_trailers.Length == 0 || prefab.m_vehicleType != VehicleInfo.VehicleType.Train) return;
+            if (!options.hasTrailer || options.prefab.m_vehicleType != VehicleInfo.VehicleType.Train) return;
 
-            VehicleInfo newTrailer = options.addBackEngine ? prefab : prefab.m_trailers[0].m_info;
-            int last = prefab.m_trailers.Length - 1;
+            VehicleInfo newTrailer = options.addBackEngine ? options.prefab : options.prefab.m_trailers[0].m_info;
+            int last = options.prefab.m_trailers.Length - 1;
 
-            if (prefab.m_trailers[last].m_info == newTrailer) return;
+            if (options.prefab.m_trailers[last].m_info == newTrailer) return;
 
-            prefab.m_trailers[last].m_info = newTrailer;
+            options.prefab.m_trailers[last].m_info = newTrailer;
 
             if (options.addBackEngine)
-                prefab.m_trailers[last].m_invertProbability = prefab.m_trailers[last].m_probability;
+                options.prefab.m_trailers[last].m_invertProbability = options.prefab.m_trailers[last].m_probability;
             else
-                prefab.m_trailers[last].m_invertProbability = prefab.m_trailers[0].m_invertProbability;
+                options.prefab.m_trailers[last].m_invertProbability = options.prefab.m_trailers[0].m_invertProbability;
             
             // TODO Apply on existing trains
             //EnumerableActionThread thread = new EnumerableActionThread(ActionAddBackEngine);
         }
 
-        private static void RestoreItemClasses()
-        {
-            if (m_vehicles.Count == 0) return;
+        #endregion
 
-            foreach(VehicleOptions options in m_vehicles.Keys)
-                m_vehicles[options].m_class = options.itemClass;
+        private static void CreateConfig()
+        {
+            CheckNewVehicles();
+
+            // Loading old mods saves
+            List<OldMods.Vehicle> removerList = OldMods.VehicleRemoverMod.LoadConfig();
+            List<OldMods.VehicleColorInfo> colorList = OldMods.VehicleColorChangerMod.LoadConfig();
+
+            if (removerList != null || colorList != null)
+            {
+                for (int i = 0; i < m_options.Length; i++)
+                {
+                    if (removerList != null)
+                    {
+                        OldMods.Vehicle vehicle = removerList.Find((v) => { return v.name == m_options[i].name; });
+                        if (vehicle.name == m_options[i].name) m_options[i].enabled = vehicle.enabled;
+                    }
+
+                    if (colorList != null)
+                    {
+                        OldMods.VehicleColorInfo vehicle = colorList.Find((v) => { return v.name == m_options[i].name; });
+                        if (vehicle != null && vehicle.name == m_options[i].name)
+                        {
+                            m_options[i].color0 = vehicle.color0;
+                            m_options[i].color1 = vehicle.color1;
+                            m_options[i].color2 = vehicle.color2;
+                            m_options[i].color3 = vehicle.color3;
+                        }
+                    }
+                }
+            }
+
+            SaveConfig();
         }
 
         /// <summary>
@@ -354,15 +332,18 @@ namespace AdvancedVehicleOptions
         /// </summary>
         private static void CheckNewVehicles()
         {
+            List<VehicleOptions> optionsList = new List<VehicleOptions>(m_options);
+
             for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
             {
                 VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
 
                 if (prefab == null) continue;
-                if (m_vehicles.ContainsValue(prefab)) continue;
+                if (m_options.First<VehicleOptions>() != null) continue;
 
                 // New vehicle
                 VehicleOptions options = new VehicleOptions();
+                options.SetPrefab(prefab);
 
                 options.name = prefab.name;
                 options.maxSpeed = prefab.m_maxSpeed;
@@ -375,39 +356,15 @@ namespace AdvancedVehicleOptions
                 options.enabled = true;
                 options.addBackEngine = false;
 
-                options.hasTrailer = prefab.m_trailers != null && prefab.m_trailers.Length > 0;
-
                 if (prefab.m_vehicleType == VehicleInfo.VehicleType.Train && options.hasTrailer)
                 {
                     options.addBackEngine = prefab.m_trailers[prefab.m_trailers.Length - 1].m_info == prefab;
                 }
 
-                options.vehicleType = prefab.m_vehicleType;
-                options.itemClass = prefab.m_class;
-                options.localizedName = GetLocalizedName(prefab);
-
-                m_vehicles.Add(options, prefab);
-            }
-        }
-
-        /// <summary>
-        /// Get a better displayable and localized name
-        /// </summary>
-        private static string GetLocalizedName(VehicleInfo prefab)
-        {
-            // Custom names
-            string name = prefab.name;
-            if (name.Contains('.'))
-            {
-                // Removes the steam ID and trailing data from the name
-                return name.Substring(name.IndexOf('.') + 1).Replace("_Data", "");
+                optionsList.Add(options);
             }
 
-            // Default names
-            //name = Singleton<VehicleManager>.instance.GetDefaultVehicleName((ushort)prefab.m_prefabDataIndex);
-            //if (name == "Invalid" || name.StartsWith("VEHICLE_TITLE"))
-                return prefab.name;
-            //return name;
+            m_options = optionsList.ToArray();
         }
     }
 }

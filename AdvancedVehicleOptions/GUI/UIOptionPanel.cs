@@ -60,7 +60,7 @@ namespace AdvancedVehicleOptions.GUI
             m_color3_hex.text = options.color3.ToString();
             m_enabled.isChecked = options.enabled;
             m_addBackEngine.isChecked = options.addBackEngine;
-            m_addBackEngine.isVisible = (options.vehicleType == VehicleInfo.VehicleType.Train) && options.hasTrailer;
+            m_addBackEngine.isVisible = (options.prefab.m_vehicleType == VehicleInfo.VehicleType.Train) && options.hasTrailer;
 
             m_title.iconSprite = UIMainPanel.vehicleIconList[(int)options.category];
 

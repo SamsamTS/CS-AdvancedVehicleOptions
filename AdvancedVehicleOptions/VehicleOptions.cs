@@ -2,34 +2,13 @@
 
 using System;
 using System.Text;
+using System.Linq;
 using System.Xml.Serialization;
 
 namespace AdvancedVehicleOptions
 {
     public class VehicleOptions : IComparable
     {
-        [XmlAttribute("name")]
-        public string name;
-
-        public bool enabled;
-        public bool addBackEngine;
-        public float maxSpeed;
-        public HexaColor color0;
-        public HexaColor color1;
-        public HexaColor color2;
-        public HexaColor color3;
-
-        [XmlIgnore]
-        public VehicleInfo.VehicleType vehicleType;
-        [XmlIgnore]
-        public ItemClass itemClass;
-        [XmlIgnore]
-        public bool hasTrailer;
-        [XmlIgnore]
-        public string localizedName;
-        [XmlIgnore]
-        private Category m_category = Category.None;
-
         public enum Category
         {
             None = -1,
@@ -48,13 +27,49 @@ namespace AdvancedVehicleOptions
             TransportPlane
         }
 
+        [XmlAttribute("name")]
+        public string name;
+
+        public bool enabled;
+        public bool addBackEngine;
+        public float maxSpeed;
+        public HexaColor color0;
+        public HexaColor color1;
+        public HexaColor color2;
+        public HexaColor color3;
+
+        private VehicleInfo m_prefab;
+        private Category m_category = Category.None;
+        private ItemClass.Placement m_placementStyle;
+        private string m_localizedName;
+
+        public VehicleInfo prefab
+        {
+            get { return m_prefab; }
+        }
+
+        public ItemClass.Placement placementStyle
+        {
+            get { return m_placementStyle; }
+        }
+
+        public bool hasTrailer
+        {
+            get { return m_prefab.m_trailers != null && m_prefab.m_trailers.Length > 0; }
+        }
+
+        public string localizedName
+        {
+            get { return m_localizedName; }
+        }
+
         public Category category
         {
             get
             {
-                if (m_category > Category.None) return m_category;
+                if (m_category != Category.None) return m_category;
 
-                switch (itemClass.m_service)
+                switch (m_prefab.m_class.m_service)
                 {
                     case ItemClass.Service.PoliceDepartment:
                         return Category.Police;
@@ -66,7 +81,7 @@ namespace AdvancedVehicleOptions
                         return Category.Garbage;
                 }
 
-                switch (itemClass.m_subService)
+                switch (m_prefab.m_class.m_subService)
                 {
                     case ItemClass.SubService.PublicTransportBus:
                         return Category.TransportBus;
@@ -80,7 +95,7 @@ namespace AdvancedVehicleOptions
                         return Category.TransportPlane;
                 }
 
-                switch (vehicleType)
+                switch (m_prefab.m_vehicleType)
                 {
                     case VehicleInfo.VehicleType.Train:
                         return Category.CargoTrain;
@@ -88,7 +103,7 @@ namespace AdvancedVehicleOptions
                         return Category.CargoShip;
                 }
 
-                switch (itemClass.m_service)
+                switch (m_prefab.m_class.m_service)
                 {
                     case ItemClass.Service.Industrial:
                         return Category.Industrial;
@@ -96,6 +111,30 @@ namespace AdvancedVehicleOptions
 
                 return Category.Citizen;
             }
+        }
+
+        public bool SetPrefab(VehicleInfo prefab)
+        {
+            if (m_prefab != null || prefab == null) return false;
+
+            m_prefab = prefab;
+            m_placementStyle = prefab.m_placementStyle;
+
+            m_localizedName = prefab.name;
+            if (name.Contains('.'))
+            {
+                // Removes the steam ID and trailing _Data from the name
+                m_localizedName = name.Substring(name.IndexOf('.') + 1).Replace("_Data", "");
+            }
+            /*else
+            {
+                // Default names
+                name = Singleton<VehicleManager>.instance.GetDefaultVehicleName((ushort)prefab.m_prefabDataIndex);
+                if (name == "Invalid" || name.StartsWith("VEHICLE_TITLE"))
+                    m_localizedName = prefab.name;
+            }*/
+
+            return true;
         }
 
         public int CompareTo(object o)

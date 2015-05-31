@@ -18,12 +18,6 @@ namespace AdvancedVehicleOptions.GUI
             set { m_options = value; }
         }
 
-        public void Refresh()
-        {
-            m_disabled.isVisible = !options.enabled;
-            m_name.textColor = options.enabled ? new Color32(255, 255, 255, 255) : new Color32(128, 128, 128, 255);
-        }
-
         public UIPanel background
         {
             get
@@ -37,7 +31,7 @@ namespace AdvancedVehicleOptions.GUI
 
                     m_background.zOrder = 0;
                 }
-                
+
                 return m_background;
             }
         }
@@ -70,6 +64,12 @@ namespace AdvancedVehicleOptions.GUI
             m_name.relativePosition = new Vector3(55, 13);
 
             Refresh();
+        }
+
+        public void Refresh()
+        {
+            m_disabled.isVisible = !options.enabled;
+            m_name.textColor = options.enabled ? new Color32(255, 255, 255, 255) : new Color32(128, 128, 128, 255);
         }
 
         protected override void OnClick(UIMouseEventParameter p)
