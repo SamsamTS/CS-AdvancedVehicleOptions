@@ -20,7 +20,7 @@ namespace AdvancedVehicleOptions
         #region IUserMod implementation
         public string Name
         {
-            get { return "Advanced Vehicle Options 1.0.2"; }
+            get { return "Advanced Vehicle Options 1.0.4"; }
         }
 
         public string Description
@@ -41,6 +41,8 @@ namespace AdvancedVehicleOptions
         private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private const string m_fileName = "AdvancedVehicleOptions.xml";
+
+        public static bool stopLoading = false;
                 
         #region LoadingExtensionBase overrides
         /// <summary>
@@ -54,7 +56,18 @@ namespace AdvancedVehicleOptions
 
             // Creating GUI
             UIView view = UIView.GetAView();
-            m_mainPanel = (GUI.UIMainPanel)view.AddUIComponent(typeof(GUI.UIMainPanel));
+
+            try
+            {
+                m_mainPanel = (GUI.UIMainPanel)view.AddUIComponent(typeof(GUI.UIMainPanel));
+            }
+            catch(Exception e)
+            {
+                stopLoading = true;
+
+                DebugUtils.Warning("Couldn't create the UI. Please relaunch the game.");
+                Debug.LogException(e);
+            }
 
             // Loading the configuration
             // LoadConfig();
@@ -65,7 +78,21 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public override void OnLevelUnloading()
         {
+            base.OnLevelUnloading();
+
+            if (m_mainPanel == null) return;
             SaveConfig();
+            m_mainPanel.parent.RemoveUIComponent(m_mainPanel);
+            GameObject.Destroy(m_mainPanel);
+        }
+
+        public override void OnReleased()
+        {
+            base.OnReleased();
+
+            if (m_mainPanel == null) return;
+            SaveConfig();
+            m_mainPanel.parent.RemoveUIComponent(m_mainPanel);
             GameObject.Destroy(m_mainPanel);
         }
         #endregion
@@ -75,6 +102,8 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public static void LoadConfig()
         {
+            if (stopLoading) return;
+
             m_options = null; // Clear all options
 
             if (!File.Exists(m_fileName))

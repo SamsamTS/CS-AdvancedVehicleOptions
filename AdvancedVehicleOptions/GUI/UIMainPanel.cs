@@ -13,17 +13,17 @@ namespace AdvancedVehicleOptions.GUI
         private UIButton m_reload;
         private UIButton m_save;
 
-        private UISprite m_button;
+        public UISprite m_button;
 
         private UIOptionPanel m_optionPanel;
         private VehicleOptions[] m_optionsList;
         private UIVehicleItem[] m_itemList;
 
-        public static readonly string[] vehicleIconList =
-            { "IconCitizenVehicle", "IconServiceVehicle", "IconServiceVehicle", "IconCargoShip",
-              "ToolbarIconPolice", "InfoIconFireSafety", "ToolbarIconHealthcare", "InfoIconGarbage",
-              "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTrain",
-              "SubBarPublicTransportShip", "SubBarPublicTransportPlane" };
+        public static readonly string[] vehicleIconList = { "IconCitizenVehicle",
+              "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
+              "ToolbarIconPolice", "InfoIconFireSafety", "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage",
+              "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "IconServiceVehicle", "SubBarPublicTransportTrain",
+              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane" };
 
         public UIOptionPanel optionPanel
         {
@@ -84,6 +84,7 @@ namespace AdvancedVehicleOptions.GUI
         {
             base.OnDestroy();
 
+            m_itemList = null;
             m_button.parent.RemoveUIComponent(m_button);
             Destroy(m_button);
             Destroy(m_optionPanel);

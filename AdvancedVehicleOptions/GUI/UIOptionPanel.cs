@@ -59,6 +59,7 @@ namespace AdvancedVehicleOptions.GUI
             m_color2_hex.text = options.color2.ToString();
             m_color3_hex.text = options.color3.ToString();
             m_enabled.isChecked = options.enabled;
+            //m_enabled.isVisible = !options.isTrailer;
             m_addBackEngine.isChecked = options.addBackEngine;
             m_addBackEngine.isVisible = (options.prefab.m_vehicleType == VehicleInfo.VehicleType.Train) && options.hasTrailer;
 

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using ColossalFramework.Globalization;
 
 using System;
 using System.Text;
@@ -13,16 +14,21 @@ namespace AdvancedVehicleOptions
         {
             None = -1,
             Citizen,
-            Industrial,
-            CargoTrain,
-            CargoShip,
+            Forestry,
+            Farming,
+            Ore,
+            Oil,
+            IndustryGeneric,
             Police,
             FireSafety,
             Healthcare,
+            Deathcare,
             Garbage,
             TransportBus,
             TransportMetro,
+            CargoTrain,
             TransportTrain,
+            CargoShip,
             TransportShip,
             TransportPlane
         }
@@ -42,6 +48,7 @@ namespace AdvancedVehicleOptions
         private Category m_category = Category.None;
         private ItemClass.Placement m_placementStyle;
         private string m_localizedName;
+        private bool m_isTrailer = false;
 
         public VehicleInfo prefab
         {
@@ -58,6 +65,11 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_trailers != null && m_prefab.m_trailers.Length > 0; }
         }
 
+        public bool isTrailer
+        {
+            get { return m_isTrailer; }
+        }
+
         public string localizedName
         {
             get { return m_localizedName; }
@@ -67,49 +79,9 @@ namespace AdvancedVehicleOptions
         {
             get
             {
-                if (m_category != Category.None) return m_category;
-
-                switch (m_prefab.m_class.m_service)
-                {
-                    case ItemClass.Service.PoliceDepartment:
-                        return Category.Police;
-                    case ItemClass.Service.FireDepartment:
-                        return Category.FireSafety;
-                    case ItemClass.Service.HealthCare:
-                        return Category.Healthcare;
-                    case ItemClass.Service.Garbage:
-                        return Category.Garbage;
-                }
-
-                switch (m_prefab.m_class.m_subService)
-                {
-                    case ItemClass.SubService.PublicTransportBus:
-                        return Category.TransportBus;
-                    case ItemClass.SubService.PublicTransportMetro:
-                        return Category.TransportMetro;
-                    case ItemClass.SubService.PublicTransportTrain:
-                        return Category.TransportTrain;
-                    case ItemClass.SubService.PublicTransportShip:
-                        return Category.TransportShip;
-                    case ItemClass.SubService.PublicTransportPlane:
-                        return Category.TransportPlane;
-                }
-
-                switch (m_prefab.m_vehicleType)
-                {
-                    case VehicleInfo.VehicleType.Train:
-                        return Category.CargoTrain;
-                    case VehicleInfo.VehicleType.Ship:
-                        return Category.CargoShip;
-                }
-
-                switch (m_prefab.m_class.m_service)
-                {
-                    case ItemClass.Service.Industrial:
-                        return Category.Industrial;
-                }
-
-                return Category.Citizen;
+                if (m_category == Category.None)
+                    m_category = GetCategory(m_prefab);
+                return m_category;
             }
         }
 
@@ -120,19 +92,23 @@ namespace AdvancedVehicleOptions
             m_prefab = prefab;
             m_placementStyle = prefab.m_placementStyle;
 
-            m_localizedName = m_prefab.name;
-            if (m_localizedName.Contains('.'))
+            m_localizedName = Locale.GetUnchecked("VEHICLE_TITLE", prefab.name);
+            if (m_localizedName.StartsWith("VEHICLE_TITLE"))
             {
-                // Removes the steam ID and trailing _Data from the name
-                m_localizedName = m_localizedName.Substring(m_localizedName.IndexOf('.') + 1).Replace("_Data", "");
-            }
-            /*else
-            {
-                // Default names
-                name = Singleton<VehicleManager>.instance.GetDefaultVehicleName((ushort)prefab.m_prefabDataIndex);
-                if (name == "Invalid" || name.StartsWith("VEHICLE_TITLE"))
+                VehicleInfo engine = GetEngine();
+                if (engine != null)
+                {
+                    m_localizedName = Locale.GetUnchecked("VEHICLE_TITLE", engine.name) + " (Trailer)";
+                    m_isTrailer = true;
+                    m_category = GetCategory(engine);
+                }
+                else
+                {
                     m_localizedName = prefab.name;
-            }*/
+                    // Removes the steam ID and trailing _Data from the name
+                    m_localizedName = m_localizedName.Substring(m_localizedName.IndexOf('.') + 1).Replace("_Data", "");
+                }
+            }
 
             return true;
         }
@@ -147,6 +123,79 @@ namespace AdvancedVehicleOptions
             if (delta == 0) return localizedName.CompareTo(options.localizedName);
 
             return delta;
+        }
+
+        private Category GetCategory(VehicleInfo prefab)
+        {
+            if (prefab == null) return Category.None;
+
+            switch (prefab.m_class.m_service)
+            {
+                case ItemClass.Service.PoliceDepartment:
+                    return Category.Police;
+                case ItemClass.Service.FireDepartment:
+                    return Category.FireSafety;
+                case ItemClass.Service.HealthCare:
+                    if (prefab.m_class.m_level == ItemClass.Level.Level1)
+                        return Category.Healthcare;
+                    else
+                        return Category.Deathcare;
+                case ItemClass.Service.Garbage:
+                    return Category.Garbage;
+            }
+
+            switch (prefab.m_class.m_subService)
+            {
+                case ItemClass.SubService.PublicTransportBus:
+                    return Category.TransportBus;
+                case ItemClass.SubService.PublicTransportMetro:
+                    return Category.TransportMetro;
+                case ItemClass.SubService.PublicTransportTrain:
+                    if (prefab.m_class.m_level == ItemClass.Level.Level1)
+                        return Category.TransportTrain;
+                    else
+                        return Category.CargoTrain;
+                case ItemClass.SubService.PublicTransportShip:
+                    if (prefab.m_class.m_level == ItemClass.Level.Level1)
+                        return Category.TransportShip;
+                    else
+                        return Category.CargoShip;
+                case ItemClass.SubService.PublicTransportPlane:
+                    return Category.TransportPlane;
+                case ItemClass.SubService.IndustrialForestry:
+                    return Category.Forestry;
+                case ItemClass.SubService.IndustrialFarming:
+                    return Category.Farming;
+                case ItemClass.SubService.IndustrialOre:
+                    return Category.Ore;
+                case ItemClass.SubService.IndustrialOil:
+                    return Category.Oil;
+                case ItemClass.SubService.IndustrialGeneric:
+                    return Category.IndustryGeneric;
+            }
+
+            return Category.Citizen;
+        }
+
+        private VehicleInfo GetEngine()
+        {
+            for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
+            {
+                VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
+                if (prefab == null) continue;
+
+                try
+                {
+                    if (prefab.m_trailers != null && prefab.m_trailers.Length > 0 && prefab.m_trailers[0].m_info == m_prefab)
+                        return prefab;
+                }
+                catch(Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+
+            return null;
         }
     }
 
