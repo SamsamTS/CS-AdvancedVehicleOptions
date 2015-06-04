@@ -29,7 +29,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.0.5";
+        public const string version = "1.0.6";
         #endregion
 
         private static VehicleOptions[] m_options;
@@ -418,7 +418,10 @@ namespace AdvancedVehicleOptions
                 return;
             }
 
-            DebugUtils.Log("Found " + (optionsList.Count - m_options.Length) + " new vehicle(s)");
+            if(m_options != null)
+                DebugUtils.Log("Found " + (optionsList.Count - m_options.Length) + " new vehicle(s)");
+            else
+                DebugUtils.Log("Found " + optionsList.Count + " new vehicle(s)");
 
             m_options = optionsList.ToArray();
 
