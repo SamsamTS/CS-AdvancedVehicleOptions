@@ -29,7 +29,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.0.5";
+        public const string version = "1.1";
         #endregion
 
         private static VehicleOptions[] m_options;

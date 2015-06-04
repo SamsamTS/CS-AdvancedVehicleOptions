@@ -12,12 +12,18 @@ namespace AdvancedVehicleOptions.GUI
         private UIPanel m_panelForScrollPanel;
         private UIButton m_reload;
         private UIButton m_save;
+        private UITextureSprite m_preview;
+        private UIOptionPanel m_optionPanel;
 
         public UISprite m_button;
 
-        private UIOptionPanel m_optionPanel;
         private VehicleOptions[] m_optionsList;
         private UIVehicleItem[] m_itemList;
+        private PreviewCamera m_previewCamera;
+
+        private const int HEIGHT = 555;
+        private const int WIDTHLEFT = 450;
+        private const int WIDTHRIGHT = 315;
 
         public static readonly string[] vehicleIconList = { "IconCitizenVehicle",
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
@@ -46,36 +52,36 @@ namespace AdvancedVehicleOptions.GUI
         {
             base.Start();
 
+            UIView view = GetUIView();
+
             name = "AdvancedVehicleOptions";
             backgroundSprite = "UnlockingPanel2";
             isVisible = false;
             canFocus = true;
             isInteractive = true;
-            width = 450;
-            height = 395;
-            relativePosition = new Vector3(Mathf.Floor((GetUIView().fixedWidth - width - 315) / 2), Mathf.Floor((GetUIView().fixedHeight - height) / 2));
+            width = WIDTHLEFT + WIDTHRIGHT;
+            height = HEIGHT;
+            relativePosition = new Vector3(Mathf.Floor((view.fixedWidth - width) / 2), Mathf.Floor((view.fixedHeight - height) / 2));
 
-            m_optionPanel = (UIOptionPanel)GetUIView().AddUIComponent(typeof(UIOptionPanel));
-
+            // Setting up UI
             SetupControls();
 
-            UITabstrip toolStrip = GetUIView().FindUIComponent<UITabstrip>("MainToolstrip");
+            // Adding main button
+            UITabstrip toolStrip = view.FindUIComponent<UITabstrip>("MainToolstrip");
             m_button = toolStrip.AddUIComponent<UISprite>();
             m_button.spriteName = "IconCitizenVehicle";
             m_button.size = m_button.spriteInfo.pixelSize;
             m_button.relativePosition = new Vector3(0, 5);
 
-            GetUIView().FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
+            view.FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
 
             m_button.eventClick += new MouseEventHandler((c, p) =>
             {
                 if (p != null) p.Use();
                 isVisible = !isVisible;
-                
-                m_optionPanel.isVisible = false;
-                OnSelectedItemChanged(null, null);
             });
 
+            // Loading config
             AdvancedVehicleOptions.LoadConfig(this);
         }
 
@@ -105,7 +111,7 @@ namespace AdvancedVehicleOptions.GUI
             m_panelForScrollPanel.gameObject.AddComponent<UICustomControl>();
 
             m_panelForScrollPanel.backgroundSprite = "UnlockingPanel";
-            m_panelForScrollPanel.width = width - 10;
+            m_panelForScrollPanel.width = WIDTHLEFT - 5;
             m_panelForScrollPanel.height = height - offset - 75;
             m_panelForScrollPanel.relativePosition = new Vector3(5, offset);
 
@@ -171,8 +177,21 @@ namespace AdvancedVehicleOptions.GUI
             m_save.text = "Save";
             m_save.relativePosition = new Vector3(105, height - 40);
 
+            // Preview
+            m_preview = AddUIComponent<UITextureSprite>();
+            m_preview.width = WIDTHRIGHT - 10;
+            m_preview.height = HEIGHT - offset - 335;
+            m_preview.relativePosition = new Vector3(WIDTHLEFT + 5, offset);
+
+            //m_previewCamera = new PreviewCamera();
+            //m_previewCamera.alpha = true;
+            //m_previewCamera.preview = m_preview;
+
+            // Option panel
+            m_optionPanel = AddUIComponent<UIOptionPanel>();
+            m_optionPanel.relativePosition = new Vector3(WIDTHLEFT, height - 330);
+
             // Event handlers
-            m_title.closeButton.eventClick += new MouseEventHandler((c, t) => { m_optionPanel.isVisible = false; });
             m_optionPanel.eventEnableCheckChanged += new PropertyChangedEventHandler<bool>(OnEnableStateChanged);
             m_reload.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.LoadConfig(this));
             m_save.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.SaveConfig());
@@ -240,7 +259,7 @@ namespace AdvancedVehicleOptions.GUI
             item.background.color = new Color32(255, 255, 255, 255);
 
             m_optionPanel.Show(item.options);
-            m_optionPanel.relativePosition = new Vector3(relativePosition.x + width + 5, relativePosition.y);
+            item.options.prefab.RenderMesh();
         }
 
         protected void OnEnableStateChanged(UIComponent component, bool state)

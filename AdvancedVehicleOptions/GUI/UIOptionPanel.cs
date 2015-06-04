@@ -5,7 +5,6 @@ namespace AdvancedVehicleOptions.GUI
 {
     public class UIOptionPanel : UIPanel
     {
-        private UITitleBar m_title;
         private UITextField m_maxSpeed;
         private UIColorField m_color0;
         private UIColorField m_color1;
@@ -29,13 +28,10 @@ namespace AdvancedVehicleOptions.GUI
         public override void Start()
         {
             base.Start();
-            backgroundSprite = "UnlockingPanel2";
-            isVisible = false;
             canFocus = true;
             isInteractive = true;
             width = 315;
             height = 330;
-            relativePosition = new Vector3(Mathf.Floor((GetUIView().fixedWidth - width + 450) / 2), Mathf.Floor((GetUIView().fixedHeight - height) / 2));
 
             SetupControls();
 
@@ -48,7 +44,6 @@ namespace AdvancedVehicleOptions.GUI
 
             m_options = options;
 
-            m_title.title = options.localizedName;
             m_maxSpeed.text = Mathf.RoundToInt(options.maxSpeed * 5).ToString();
             m_color0.selectedColor = options.color0;
             m_color1.selectedColor = options.color1;
@@ -63,21 +58,12 @@ namespace AdvancedVehicleOptions.GUI
             m_addBackEngine.isChecked = options.addBackEngine;
             m_addBackEngine.isVisible = (options.prefab.m_vehicleType == VehicleInfo.VehicleType.Train) && options.hasTrailer;
 
-            m_title.iconSprite = UIMainPanel.vehicleIconList[(int)options.category];
-
-            Show();
-
             m_initialized = true;
         }
 
         private void SetupControls()
         {
             float offset = 40f;
-
-            // Title Bar
-            m_title = AddUIComponent<UITitleBar>();
-            m_title.iconSprite = "IconCitizenVehicle";
-            m_title.title = "Vehicle Options";
 
             UIPanel panel = AddUIComponent<UIPanel>();
             panel.gameObject.AddComponent<UICustomControl>();
