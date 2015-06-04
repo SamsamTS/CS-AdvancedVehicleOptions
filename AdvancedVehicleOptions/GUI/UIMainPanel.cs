@@ -46,6 +46,7 @@ namespace AdvancedVehicleOptions.GUI
         {
             base.Start();
 
+            name = "AdvancedVehicleOptions";
             backgroundSprite = "UnlockingPanel2";
             isVisible = false;
             canFocus = true;
@@ -57,8 +58,6 @@ namespace AdvancedVehicleOptions.GUI
             m_optionPanel = (UIOptionPanel)GetUIView().AddUIComponent(typeof(UIOptionPanel));
 
             SetupControls();
-
-            PopulateList();
 
             UITabstrip toolStrip = GetUIView().FindUIComponent<UITabstrip>("MainToolstrip");
             m_button = toolStrip.AddUIComponent<UISprite>();
@@ -77,17 +76,19 @@ namespace AdvancedVehicleOptions.GUI
                 OnSelectedItemChanged(null, null);
             });
 
-            AdvancedVehicleOptions.LoadConfig();
+            AdvancedVehicleOptions.LoadConfig(this);
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
 
-            m_itemList = null;
-            m_button.parent.RemoveUIComponent(m_button);
+            DebugUtils.Log("Destroying UIMainPanel");
+
+            ClearList();
+
             Destroy(m_button);
-            Destroy(m_optionPanel);
+            UIUtils.DestroyDeeply(m_optionPanel);
         }
 
         private void SetupControls()
@@ -97,7 +98,7 @@ namespace AdvancedVehicleOptions.GUI
             // Title Bar
             m_title = AddUIComponent<UITitleBar>();
             m_title.iconSprite = "IconCitizenVehicle";
-            m_title.title = "Advanced Vehicle Options";
+            m_title.title = "Advanced Vehicle Options " + AdvancedVehicleOptions.version;
 
             // Scroll Panel (from Extended Public Transport UI)
             m_panelForScrollPanel = AddUIComponent<UIPanel>();
@@ -173,7 +174,7 @@ namespace AdvancedVehicleOptions.GUI
             // Event handlers
             m_title.closeButton.eventClick += new MouseEventHandler((c, t) => { m_optionPanel.isVisible = false; });
             m_optionPanel.eventEnableCheckChanged += new PropertyChangedEventHandler<bool>(OnEnableStateChanged);
-            m_reload.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.LoadConfig());
+            m_reload.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.LoadConfig(this));
             m_save.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.SaveConfig());
         }
 
@@ -181,12 +182,19 @@ namespace AdvancedVehicleOptions.GUI
         {
             ClearList();
 
-            if (m_optionsList == null || m_scrollablePanel == null) return;
-
             m_itemList = new UIVehicleItem[m_optionsList.Length];
             for (int i = 0; i < m_optionsList.Length; i++)
             {
-                m_itemList[i] = m_scrollablePanel.AddUIComponent<UIVehicleItem>();
+                try
+                {
+                    m_itemList[i] = m_scrollablePanel.AddUIComponent<UIVehicleItem>();
+                }
+                catch
+                {
+                    DebugUtils.Log("Couldn't create UIVehicleItem.");
+                    UIUtils.DestroyDeeply(GameObject.Find("AdvancedVehicleOptions").GetComponent<UIComponent>());
+                    return;
+                }
 
                 if ((i % 2) == 1)
                 {
@@ -204,10 +212,7 @@ namespace AdvancedVehicleOptions.GUI
             if (m_itemList == null) return;
 
             for (int i = 0; i < m_itemList.Length; i++)
-            {
-                m_itemList[i].isVisible = false;
-                RemoveUIComponent(m_itemList[i]);
-            }
+                Destroy(m_itemList[i]);
 
             m_itemList = null;
         }

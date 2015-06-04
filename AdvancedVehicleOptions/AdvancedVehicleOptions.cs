@@ -2,6 +2,7 @@
 using UnityEngine;
 
 using System;
+using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,16 +21,19 @@ namespace AdvancedVehicleOptions
         #region IUserMod implementation
         public string Name
         {
-            get { return "Advanced Vehicle Options 1.0.4"; }
+            get { return "Advanced Vehicle Options " + version; }
         }
 
         public string Description
         {
             get { return "Customize your vehicles"; }
         }
+
+        public const string version = "1.0.5";
         #endregion
 
         private static VehicleOptions[] m_options;
+        private static VehicleOptions[] m_default;
         private static GUI.UIMainPanel m_mainPanel;
 
         private static List<VehicleInfo> m_removeList = new List<VehicleInfo>();
@@ -41,8 +45,6 @@ namespace AdvancedVehicleOptions
         private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private const string m_fileName = "AdvancedVehicleOptions.xml";
-
-        public static bool stopLoading = false;
                 
         #region LoadingExtensionBase overrides
         /// <summary>
@@ -60,17 +62,17 @@ namespace AdvancedVehicleOptions
             try
             {
                 m_mainPanel = (GUI.UIMainPanel)view.AddUIComponent(typeof(GUI.UIMainPanel));
+                DebugUtils.Log("UIMainPanel created");
             }
-            catch(Exception e)
+            catch
             {
-                stopLoading = true;
-
-                DebugUtils.Warning("Couldn't create the UI. Please relaunch the game.");
-                Debug.LogException(e);
+                DebugUtils.Warning("A new version of the mod has been installed." + Environment.NewLine +
+                    "The game must be exited completely for changes to take effect." + Environment.NewLine +
+                    "Until then the mod is disabled.");
+                return;
             }
 
-            // Loading the configuration
-            // LoadConfig();
+            CompileVehiclesList(true);
         }
 
         /// <summary>
@@ -81,9 +83,12 @@ namespace AdvancedVehicleOptions
             base.OnLevelUnloading();
 
             if (m_mainPanel == null) return;
+
             SaveConfig();
-            m_mainPanel.parent.RemoveUIComponent(m_mainPanel);
-            GameObject.Destroy(m_mainPanel);
+            RestoreOptions();
+
+            DebugUtils.Log("Destroying UIMainPanel");
+            GUI.UIUtils.DestroyDeeply(m_mainPanel);
         }
 
         public override void OnReleased()
@@ -91,19 +96,20 @@ namespace AdvancedVehicleOptions
             base.OnReleased();
 
             if (m_mainPanel == null) return;
+
             SaveConfig();
-            m_mainPanel.parent.RemoveUIComponent(m_mainPanel);
-            GameObject.Destroy(m_mainPanel);
+            RestoreOptions();
+
+            DebugUtils.Log("Destroying UIMainPanel");
+            GUI.UIUtils.DestroyDeeply(m_mainPanel);
         }
         #endregion
 
         /// <summary>
         /// Load and apply the configuration file
         /// </summary>
-        public static void LoadConfig()
+        public static void LoadConfig(UIComponent source)
         {
-            if (stopLoading) return;
-
             m_options = null; // Clear all options
 
             if (!File.Exists(m_fileName))
@@ -142,7 +148,7 @@ namespace AdvancedVehicleOptions
                 DebugUtils.Warning("Couldn't load configuration (vehicle list is null)");
                 return;
             }
-
+            
             // Remove unneeded options
             List<VehicleOptions> optionsList = new List<VehicleOptions>();
 
@@ -159,11 +165,14 @@ namespace AdvancedVehicleOptions
             m_options = optionsList.ToArray();
 
             // Checking for new vehicles
-            CheckNewVehicles();
+            CompileVehiclesList();
 
             // Update GUI list
             ApplyOptions();
             m_mainPanel.optionList = m_options;
+
+            DebugUtils.Log("Configuration loaded");
+            LogVehicleListSteamID();
         }
 
         /// <summary>
@@ -180,6 +189,7 @@ namespace AdvancedVehicleOptions
                     stream.SetLength(0); // Emptying the file !!!
                     XmlSerializer xmlSerializer = new XmlSerializer(typeof(VehicleOptions[]));
                     xmlSerializer.Serialize(stream, m_options);
+                    DebugUtils.Log("Configuration saved");
                 }
             }
             catch (Exception e)
@@ -265,6 +275,8 @@ namespace AdvancedVehicleOptions
        
         public static void ApplyOptions()
         {
+            if (m_options == null) return;
+
             for (int i = 0; i < m_options.Length; i++)
             {
                 ApplyMaxSpeed(m_options[i]);
@@ -319,11 +331,18 @@ namespace AdvancedVehicleOptions
             //EnumerableActionThread thread = new EnumerableActionThread(ActionAddBackEngine);
         }
 
+        public static void RestoreOptions()
+        {
+            m_options = m_default;
+            ApplyOptions();
+            m_default = null;
+        }
+
         #endregion
 
         private static void CreateConfig()
         {
-            CheckNewVehicles();
+            CompileVehiclesList();
 
             // Loading old mods saves
             List<OldMods.Vehicle> removerList = OldMods.VehicleRemoverMod.LoadConfig();
@@ -359,7 +378,7 @@ namespace AdvancedVehicleOptions
         /// <summary>
         /// Check if new there are vehicles and add them to the options list
         /// </summary>
-        private static void CheckNewVehicles()
+        private static void CompileVehiclesList(bool savedefault = false)
         {
             List<VehicleOptions> optionsList = new List<VehicleOptions>();
             if(m_options != null) optionsList.AddRange(m_options);
@@ -393,7 +412,16 @@ namespace AdvancedVehicleOptions
                 optionsList.Add(options);
             }
 
+            if(savedefault)
+            {
+                m_default = optionsList.ToArray();
+                return;
+            }
+
+            DebugUtils.Log("Found " + (optionsList.Count - m_options.Length) + " new vehicle(s)");
+
             m_options = optionsList.ToArray();
+
         }
 
         private static bool ContainsPrefab(VehicleInfo prefab)
@@ -404,6 +432,23 @@ namespace AdvancedVehicleOptions
                 if (m_options[i].prefab == prefab) return true;
             }
             return false;
+        }
+
+        private static void LogVehicleListSteamID()
+        {
+            StringBuilder steamIDs = new StringBuilder("Vehicle Steam IDs : ");
+
+            for (int i = 0; i < m_options.Length; i++)
+            {
+                if (m_options[i].name.Contains("."))
+                {
+                    steamIDs.Append(m_options[i].name.Substring(0, m_options[i].name.IndexOf(".") - 1));
+                    steamIDs.Append(",");
+                }
+            }
+            steamIDs.Length--;
+
+            DebugUtils.Log(steamIDs.ToString());
         }
 
         private static bool IsAICustom(VehicleAI ai)

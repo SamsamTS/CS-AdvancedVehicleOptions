@@ -85,6 +85,7 @@ namespace AdvancedVehicleOptions.GUI
             panel.backgroundSprite = "UnlockingPanel";
             panel.width = width - 10;
             panel.height = height - offset - 75;
+            panel.zOrder = 0;
             panel.relativePosition = new Vector3(5, offset);
 
             // Max Speed

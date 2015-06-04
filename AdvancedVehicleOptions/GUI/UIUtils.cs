@@ -104,5 +104,23 @@ namespace AdvancedVehicleOptions.GUI
                 icon.width = maxSize.y * ratio;
             }
         }
+
+        public static void DestroyDeeply(UIComponent component)
+        {
+            if (component == null) return;
+
+            UIComponent[] children = component.GetComponentsInChildren<UIComponent>();
+
+            if(children != null && children.Length > 0)
+            {
+                for (int i = 0; i < children.Length; i++)
+                {
+                    if (children[i].parent == component)
+                        DestroyDeeply(children[i]);
+                }
+            }
+
+            GameObject.Destroy(component);
+        }
     }
 }
