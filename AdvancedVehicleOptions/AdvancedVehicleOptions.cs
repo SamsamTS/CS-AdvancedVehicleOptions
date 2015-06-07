@@ -418,7 +418,10 @@ namespace AdvancedVehicleOptions
                 return;
             }
 
-            DebugUtils.Log("Found " + (optionsList.Count - m_options.Length) + " new vehicle(s)");
+            if(m_options != null)
+                DebugUtils.Log("Found " + (optionsList.Count - m_options.Length) + " new vehicle(s)");
+            else
+                DebugUtils.Log("Found " + optionsList.Count + " new vehicle(s)");
 
             m_options = optionsList.ToArray();
 
@@ -442,7 +445,7 @@ namespace AdvancedVehicleOptions
             {
                 if (m_options[i].name.Contains("."))
                 {
-                    steamIDs.Append(m_options[i].name.Substring(0, m_options[i].name.IndexOf(".") - 1));
+                    steamIDs.Append(m_options[i].name.Substring(0, m_options[i].name.IndexOf(".")));
                     steamIDs.Append(",");
                 }
             }
