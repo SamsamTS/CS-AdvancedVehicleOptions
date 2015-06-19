@@ -67,14 +67,14 @@ namespace AdvancedVehicleOptions.GUI
 
             GetUIView().FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
 
-            m_button.eventClick += new MouseEventHandler((c, p) =>
+            m_button.eventClick += (c, p) =>
             {
                 if (p != null) p.Use();
                 isVisible = !isVisible;
                 
                 m_optionPanel.isVisible = false;
                 OnSelectedItemChanged(null, null);
-            });
+            };
 
             AdvancedVehicleOptions.LoadConfig(this);
         }
@@ -172,10 +172,10 @@ namespace AdvancedVehicleOptions.GUI
             m_save.relativePosition = new Vector3(105, height - 40);
 
             // Event handlers
-            m_title.closeButton.eventClick += new MouseEventHandler((c, t) => { m_optionPanel.isVisible = false; });
-            m_optionPanel.eventEnableCheckChanged += new PropertyChangedEventHandler<bool>(OnEnableStateChanged);
-            m_reload.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.LoadConfig(this));
-            m_save.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.SaveConfig());
+            m_title.closeButton.eventClick += (c, t) => { m_optionPanel.isVisible = false; };
+            m_optionPanel.eventEnableCheckChanged += OnEnableStateChanged;
+            m_reload.eventClick += (c, t) => AdvancedVehicleOptions.LoadConfig(this);
+            m_save.eventClick += (c, t) => AdvancedVehicleOptions.SaveConfig();
         }
 
         private void PopulateList()
@@ -202,7 +202,7 @@ namespace AdvancedVehicleOptions.GUI
                     m_itemList[i].background.color = new Color32(0, 0, 0, 128);
                 }
 
-                m_itemList[i].eventClick += new MouseEventHandler(OnSelectedItemChanged);
+                m_itemList[i].eventClick += OnSelectedItemChanged;
                 m_itemList[i].options = m_optionsList[i];
             }
         }

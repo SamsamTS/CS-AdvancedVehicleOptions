@@ -29,7 +29,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.0.6";
+        public const string version = "1.0.8";
         #endregion
 
         private static VehicleOptions[] m_options;
@@ -445,7 +445,7 @@ namespace AdvancedVehicleOptions
             {
                 if (m_options[i].name.Contains("."))
                 {
-                    steamIDs.Append(m_options[i].name.Substring(0, m_options[i].name.IndexOf(".") - 1));
+                    steamIDs.Append(m_options[i].name.Substring(0, m_options[i].name.IndexOf(".")));
                     steamIDs.Append(",");
                 }
             }

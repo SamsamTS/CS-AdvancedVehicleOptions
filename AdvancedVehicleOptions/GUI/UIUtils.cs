@@ -77,6 +77,26 @@ namespace AdvancedVehicleOptions.GUI
             UIColorField colorField = UnityEngine.Object.Instantiate<GameObject>(UnityEngine.Object.FindObjectOfType<UIColorField>().gameObject).GetComponent<UIColorField>();
             parent.AttachUIComponent(colorField.gameObject);
 
+            // Reset most everything
+            colorField.anchor = UIAnchorStyle.Left | UIAnchorStyle.Top;
+            colorField.arbitraryPivotOffset = new Vector2(0, 0);
+            colorField.autoSize = false;
+            colorField.bringTooltipToFront = true;
+            colorField.builtinKeyNavigation = true;
+            colorField.canFocus = true;
+            colorField.enabled = true;
+            colorField.isEnabled = true;
+            colorField.isInteractive = true;
+            colorField.isLocalized = false;
+            colorField.isTooltipLocalized = false;
+            colorField.isVisible = true;
+            colorField.pivot = UIPivotPoint.TopLeft;
+            colorField.useDropShadow = false;
+            colorField.useGradient = false;
+            colorField.useGUILayout = true;
+            colorField.useOutline = false;
+            colorField.verticalAlignment = UIVerticalAlignment.Top;
+
             colorField.size = new Vector2(40f, 26f);
             colorField.normalBgSprite = "ColorPickerOutline";
             colorField.hoveredBgSprite = "ColorPickerOutlineHovered";

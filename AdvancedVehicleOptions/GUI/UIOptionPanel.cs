@@ -85,67 +85,72 @@ namespace AdvancedVehicleOptions.GUI
             panel.backgroundSprite = "UnlockingPanel";
             panel.width = width - 10;
             panel.height = height - offset - 75;
-            panel.zOrder = 0;
             panel.relativePosition = new Vector3(5, offset);
 
             // Max Speed
-            UILabel maxSpeedLabel = this.AddUIComponent<UILabel>();
+            UILabel maxSpeedLabel = panel.AddUIComponent<UILabel>();
             maxSpeedLabel.text = "Maximum Speed:";
             maxSpeedLabel.textScale = 0.9f;
-            maxSpeedLabel.relativePosition = new Vector3(20, offset + 15);
+            maxSpeedLabel.relativePosition = new Vector3(15, 15);
 
-            m_maxSpeed = UIUtils.CreateTextField(this);
+            m_maxSpeed = UIUtils.CreateTextField(panel);
             m_maxSpeed.numericalOnly = true;
             m_maxSpeed.width = 75;
-            m_maxSpeed.relativePosition = new Vector3(20, offset + 35);
+            m_maxSpeed.relativePosition = new Vector3(15, 35);
 
-            UILabel kmh = this.AddUIComponent<UILabel>();
+            UILabel kmh = panel.AddUIComponent<UILabel>();
             kmh.text = "km/h";
             kmh.textScale = 0.9f;
-            kmh.relativePosition = new Vector3(100, offset + 40);
+            kmh.relativePosition = new Vector3(95, 40);
 
             // Colors
-            UILabel colorsLabel = this.AddUIComponent<UILabel>();
+            UILabel colorsLabel = panel.AddUIComponent<UILabel>();
             colorsLabel.text = "Colors:";
             colorsLabel.textScale = 0.9f;
-            colorsLabel.relativePosition = new Vector3(20, offset + 70);
+            colorsLabel.relativePosition = new Vector3(15, 70);
 
-            m_color0 = UIUtils.CreateColorField(this);
-            m_color0.relativePosition = new Vector3(18 , offset + 90 - 2);
-            m_color0_hex = UIUtils.CreateTextField(this);
+            gameObject.AddComponent<UICustomControl>();
+
+            m_color0 = UIUtils.CreateColorField(panel);
+            m_color0.name = "AVO-color0";
+            m_color0.relativePosition = new Vector3(13 , 90 - 2);
+            m_color0_hex = UIUtils.CreateTextField(panel);
             m_color0_hex.maxLength = 6;
-            m_color0_hex.relativePosition = new Vector3(60, offset + 90);
+            m_color0_hex.relativePosition = new Vector3(55, 90);
 
-            m_color1 = UIUtils.CreateColorField(this);
-            m_color1.relativePosition = new Vector3(18, offset + 115 - 2);
-            m_color1_hex = UIUtils.CreateTextField(this);
+            m_color1 = UIUtils.CreateColorField(panel);
+            m_color1.name = "AVO-color1";
+            m_color1.relativePosition = new Vector3(13, 115 - 2);
+            m_color1_hex = UIUtils.CreateTextField(panel);
             m_color1_hex.maxLength = 6;
-            m_color1_hex.relativePosition = new Vector3(60, offset + 115);
+            m_color1_hex.relativePosition = new Vector3(55, 115);
 
-            m_color2 = UIUtils.CreateColorField(this);
-            m_color2.relativePosition = new Vector3(163, offset + 90 - 2);
-            m_color2_hex = UIUtils.CreateTextField(this);
+            m_color2 = UIUtils.CreateColorField(panel);
+            m_color2.name = "AVO-color2";
+            m_color2.relativePosition = new Vector3(158, 90 - 2);
+            m_color2_hex = UIUtils.CreateTextField(panel);
             m_color2_hex.maxLength = 6;
-            m_color2_hex.relativePosition = new Vector3(205, offset + 90);
+            m_color2_hex.relativePosition = new Vector3(200, 90);
 
-            m_color3 = UIUtils.CreateColorField(this);
-            m_color3.relativePosition = new Vector3(163, offset + 115 - 2);
-            m_color3_hex = UIUtils.CreateTextField(this);
+            m_color3 = UIUtils.CreateColorField(panel);
+            m_color3.name = "AVO-color3";
+            m_color3.relativePosition = new Vector3(158, 115 - 2);
+            m_color3_hex = UIUtils.CreateTextField(panel);
             m_color3_hex.maxLength = 6;
-            m_color3_hex.relativePosition = new Vector3(205, offset + 115);
+            m_color3_hex.relativePosition = new Vector3(200, 115);
 
             // Enable & BackEngine
-            m_enabled = UIUtils.CreateCheckBox(this);
+            m_enabled = UIUtils.CreateCheckBox(panel);
             m_enabled.text = "Allow this vehicle to spawn";
             m_enabled.isChecked = true;
             m_enabled.width = width - 40;
-            m_enabled.relativePosition = new Vector3(20, offset + 155); ;
+            m_enabled.relativePosition = new Vector3(15, 155); ;
 
-            m_addBackEngine = UIUtils.CreateCheckBox(this);
+            m_addBackEngine = UIUtils.CreateCheckBox(panel);
             m_addBackEngine.text = "Replace last car with engine";
             m_addBackEngine.isChecked = false;
             m_addBackEngine.width = width - 40;
-            m_addBackEngine.relativePosition = new Vector3(20, offset + 180);
+            m_addBackEngine.relativePosition = new Vector3(15, 180);
 
             // Remove Vehicles
             UILabel removeLabel = this.AddUIComponent<UILabel>();
@@ -163,24 +168,26 @@ namespace AdvancedVehicleOptions.GUI
             m_clearParked.width = 90f;
             m_clearParked.relativePosition = new Vector3(105, height - 40);
 
+            panel.BringToFront();
+
             // Event handlers
-            m_maxSpeed.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnMaxSpeedSubmitted);
+            m_maxSpeed.eventTextSubmitted += OnMaxSpeedSubmitted;
 
-            m_color0.eventSelectedColorChanged += new PropertyChangedEventHandler<Color>(OnColorChanged);
-            m_color1.eventSelectedColorChanged += new PropertyChangedEventHandler<Color>(OnColorChanged);
-            m_color2.eventSelectedColorChanged += new PropertyChangedEventHandler<Color>(OnColorChanged);
-            m_color3.eventSelectedColorChanged += new PropertyChangedEventHandler<Color>(OnColorChanged);
+            m_color0.eventSelectedColorChanged += OnColorChanged;
+            m_color1.eventSelectedColorChanged += OnColorChanged;
+            m_color2.eventSelectedColorChanged += OnColorChanged;
+            m_color3.eventSelectedColorChanged += OnColorChanged;
 
-            m_color0_hex.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnColorHexSubmitted);
-            m_color1_hex.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnColorHexSubmitted);
-            m_color2_hex.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnColorHexSubmitted);
-            m_color3_hex.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnColorHexSubmitted);
+            m_color0_hex.eventTextSubmitted += OnColorHexSubmitted;
+            m_color1_hex.eventTextSubmitted += OnColorHexSubmitted;
+            m_color2_hex.eventTextSubmitted += OnColorHexSubmitted;
+            m_color3_hex.eventTextSubmitted += OnColorHexSubmitted;
 
-            m_enabled.eventCheckChanged += new PropertyChangedEventHandler<bool>(OnCheckChanged);
-            m_addBackEngine.eventCheckChanged += new PropertyChangedEventHandler<bool>(OnCheckChanged);
+            m_enabled.eventCheckChanged += OnCheckChanged;
+            m_addBackEngine.eventCheckChanged += OnCheckChanged;
 
-            m_clearVehicles.eventClick += new MouseEventHandler(OnClearVehicleClicked);
-            m_clearParked.eventClick += new MouseEventHandler(OnClearVehicleClicked);
+            m_clearVehicles.eventClick += OnClearVehicleClicked;
+            m_clearParked.eventClick += OnClearVehicleClicked;
         }
 
         protected void OnCheckChanged(UIComponent component, bool state)
