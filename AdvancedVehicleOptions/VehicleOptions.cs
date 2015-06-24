@@ -39,16 +39,19 @@ namespace AdvancedVehicleOptions
         public bool enabled;
         public bool addBackEngine;
         public float maxSpeed;
+        public float acceleration = -1f;
         public HexaColor color0;
         public HexaColor color1;
         public HexaColor color2;
         public HexaColor color3;
+        public int capacity = -1;
 
         private VehicleInfo m_prefab = null;
         private Category m_category = Category.None;
         private ItemClass.Placement m_placementStyle;
         private string m_localizedName;
         private bool m_isTrailer = false;
+        private bool m_hasCapacity = false;
 
         public VehicleInfo prefab
         {
@@ -58,6 +61,11 @@ namespace AdvancedVehicleOptions
         public ItemClass.Placement placementStyle
         {
             get { return m_placementStyle; }
+        }
+
+        public bool hasCapacity
+        {
+            get { return m_hasCapacity; }
         }
 
         public bool hasTrailer
@@ -110,7 +118,56 @@ namespace AdvancedVehicleOptions
                 }
             }
 
+            if (acceleration == -1f)
+                acceleration = prefab.m_acceleration;
+
+            if(capacity == -1) capacity = getCapacity();
+            m_hasCapacity = (capacity != -1);
+
             return true;
+        }
+
+        private int getCapacity()
+        {
+            VehicleAI ai;
+
+            ai = m_prefab.m_vehicleAI as AmbulanceAI;
+            if (ai != null) return ((AmbulanceAI)ai).m_patientCapacity;
+
+            ai = m_prefab.m_vehicleAI as BusAI;
+            if (ai != null) return ((BusAI)ai).m_passengerCapacity;
+
+            ai = m_prefab.m_vehicleAI as CargoShipAI;
+            if (ai != null) return ((CargoShipAI)ai).m_cargoCapacity;
+
+            ai = m_prefab.m_vehicleAI as CargoTrainAI;
+            if (ai != null) return ((CargoTrainAI)ai).m_cargoCapacity;
+
+            ai = m_prefab.m_vehicleAI as CargoTruckAI;
+            if (ai != null) return ((CargoTruckAI)ai).m_cargoCapacity;
+
+            ai = m_prefab.m_vehicleAI as GarbageTruckAI;
+            if (ai != null) return ((GarbageTruckAI)ai).m_cargoCapacity;
+
+            ai = m_prefab.m_vehicleAI as FireTruckAI;
+            if (ai != null) return ((FireTruckAI)ai).m_fireFightingRate;
+
+            ai = m_prefab.m_vehicleAI as HearseAI;
+            if (ai != null) return ((HearseAI)ai).m_corpseCapacity;
+
+            ai = m_prefab.m_vehicleAI as PassengerPlaneAI;
+            if (ai != null) return ((PassengerPlaneAI)ai).m_passengerCapacity;
+
+            ai = m_prefab.m_vehicleAI as PassengerShipAI;
+            if (ai != null) return ((PassengerShipAI)ai).m_passengerCapacity;
+
+            ai = m_prefab.m_vehicleAI as PassengerTrainAI;
+            if (ai != null) return ((PassengerTrainAI)ai).m_passengerCapacity;
+
+            ai = m_prefab.m_vehicleAI as PoliceCarAI;
+            if (ai != null) return ((PoliceCarAI)ai).m_crimeCapacity;
+            
+            return -1;
         }
 
         public int CompareTo(object o)

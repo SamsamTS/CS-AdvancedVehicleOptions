@@ -8,8 +8,9 @@ namespace AdvancedVehicleOptions.GUI
     public class UIMainPanel : UIPanel
     {
         private UITitleBar m_title;
-        private UIScrollablePanel m_scrollablePanel;
-        private UIPanel m_panelForScrollPanel;
+        private UIDropDown m_category;
+        private UITextField m_search;
+        private UIFastList m_fastList;
         private UIButton m_reload;
         private UIButton m_save;
         private UITextureSprite m_preview;
@@ -18,12 +19,17 @@ namespace AdvancedVehicleOptions.GUI
         public UISprite m_button;
 
         private VehicleOptions[] m_optionsList;
-        private UIVehicleItem[] m_itemList;
-        private PreviewCamera m_previewCamera;
+        private PreviewRenderer m_previewRenderer;
 
-        private const int HEIGHT = 555;
-        private const int WIDTHLEFT = 450;
+        private const int HEIGHT = 550;
+        private const int WIDTHLEFT = 470;
         private const int WIDTHRIGHT = 315;
+
+        public static readonly string[] categoryList = { "All", "Citizen",
+            "Forestry", "Farming", "Ore", "Oil", "Industry",
+            "Police", "FireSafety", "Healthcare", "Deathcare", "Garbage",
+            "Bus", "Metro", "Cargo Train", "Passenger Train",
+            "Cargo Ship", "Passenger Ship", "Plane" };
 
         public static readonly string[] vehicleIconList = { "IconCitizenVehicle",
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
@@ -58,6 +64,7 @@ namespace AdvancedVehicleOptions.GUI
             backgroundSprite = "UnlockingPanel2";
             isVisible = false;
             canFocus = true;
+            clipChildren = true;
             isInteractive = true;
             width = WIDTHLEFT + WIDTHRIGHT;
             height = HEIGHT;
@@ -79,6 +86,13 @@ namespace AdvancedVehicleOptions.GUI
             {
                 if (p != null) p.Use();
                 isVisible = !isVisible;
+                if (isVisible)
+                {
+                    m_fastList.DisplayAt(m_fastList.listPosition);
+                    m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
+                    m_preview.parent.isVisible = true;
+                    ChangePreviewColor(m_optionsList[m_fastList.selectedIndex].color0);
+                }
             });
 
             // Loading config
@@ -90,8 +104,6 @@ namespace AdvancedVehicleOptions.GUI
             base.OnDestroy();
 
             DebugUtils.Log("Destroying UIMainPanel");
-
-            ClearList();
 
             Destroy(m_button);
             UIUtils.DestroyDeeply(m_optionPanel);
@@ -106,62 +118,51 @@ namespace AdvancedVehicleOptions.GUI
             m_title.iconSprite = "IconCitizenVehicle";
             m_title.title = "Advanced Vehicle Options " + AdvancedVehicleOptions.version;
 
-            // Scroll Panel (from Extended Public Transport UI)
-            m_panelForScrollPanel = AddUIComponent<UIPanel>();
-            m_panelForScrollPanel.gameObject.AddComponent<UICustomControl>();
+            // Category DropDown
+            UILabel label = AddUIComponent<UILabel>();
+            label.textScale = 0.8f;
+            label.padding = new RectOffset(0, 0, 8, 0);
+            label.relativePosition = new Vector3(10f, offset);
+            label.text = "Category :";
 
-            m_panelForScrollPanel.backgroundSprite = "UnlockingPanel";
-            m_panelForScrollPanel.width = WIDTHLEFT - 5;
-            m_panelForScrollPanel.height = height - offset - 75;
-            m_panelForScrollPanel.relativePosition = new Vector3(5, offset);
+            m_category = UIUtils.CreateDropDown(this);
+            m_category.width = 150;
 
-            m_scrollablePanel = m_panelForScrollPanel.AddUIComponent<UIScrollablePanel>();
-            m_scrollablePanel.width = m_scrollablePanel.parent.width - 20f;
-            m_scrollablePanel.height = m_scrollablePanel.parent.height;
+            for (int i = 0; i < categoryList.Length; i++)
+                m_category.AddItem(categoryList[i]);
 
-            m_scrollablePanel.autoLayout = true;
-            m_scrollablePanel.autoLayoutDirection = LayoutDirection.Vertical;
-            m_scrollablePanel.autoLayoutStart = LayoutStart.TopLeft;
-            m_scrollablePanel.autoLayoutPadding = new RectOffset(0, 0, 0, 0);
-            m_scrollablePanel.clipChildren = true;
+            m_category.selectedIndex = 0;
+            m_category.relativePosition = label.relativePosition + new Vector3(70f, 0f);
 
-            m_scrollablePanel.pivot = UIPivotPoint.TopLeft;
-            m_scrollablePanel.AlignTo(m_scrollablePanel.parent, UIAlignAnchor.TopLeft);
-
-            UIScrollbar scrollbar = m_panelForScrollPanel.AddUIComponent<UIScrollbar>();
-            scrollbar.width = scrollbar.parent.width - m_scrollablePanel.width;
-            scrollbar.height = scrollbar.parent.height;
-            scrollbar.orientation = UIOrientation.Vertical;
-            scrollbar.pivot = UIPivotPoint.BottomLeft;
-            scrollbar.AlignTo(scrollbar.parent, UIAlignAnchor.TopRight);
-            scrollbar.minValue = 0;
-            scrollbar.value = 0;
-            scrollbar.incrementAmount = 50;
-
-            UISlicedSprite tracSprite = scrollbar.AddUIComponent<UISlicedSprite>();
-            tracSprite.relativePosition = Vector2.zero;
-            tracSprite.autoSize = true;
-            tracSprite.size = tracSprite.parent.size;
-            tracSprite.fillDirection = UIFillDirection.Vertical;
-            tracSprite.spriteName = "ScrollbarTrack";
-
-            scrollbar.trackObject = tracSprite;
-
-            UISlicedSprite thumbSprite = tracSprite.AddUIComponent<UISlicedSprite>();
-            thumbSprite.relativePosition = Vector2.zero;
-            thumbSprite.fillDirection = UIFillDirection.Vertical;
-            thumbSprite.autoSize = true;
-            thumbSprite.width = thumbSprite.parent.width - 8;
-            thumbSprite.spriteName = "ScrollbarThumb";
-
-            scrollbar.thumbObject = thumbSprite;
-
-            m_scrollablePanel.verticalScrollbar = scrollbar;
-            m_scrollablePanel.eventMouseWheel += (component, param) =>
+            m_category.eventSelectedIndexChanged += (c, t) =>
             {
-                var sign = Mathf.Sign(param.wheelDelta);
-                m_scrollablePanel.scrollPosition += new Vector2(0, sign * (-1) * 40);
+                m_category.enabled = false;
+                PopulateList();
+                m_category.enabled = true;
             };
+
+            // Search
+            m_search = UIUtils.CreateTextField(this);
+            m_search.width = 150f;
+            m_search.height = 30f;
+            m_search.padding = new RectOffset(6, 6, 6, 6);
+            m_search.relativePosition = new Vector3(WIDTHLEFT - m_search.width, offset);
+
+            m_search.eventTextChanged += (c, t) => PopulateList();
+
+            label = AddUIComponent<UILabel>();
+            label.textScale = 0.8f;
+            label.padding = new RectOffset(0, 0, 8, 0);
+            label.relativePosition = m_search.relativePosition - new Vector3(60f, 0f);
+            label.text = "Search :";
+
+            // FastList
+            m_fastList = UIFastList.Create<UIVehicleItem>(this);
+            m_fastList.backgroundSprite = "UnlockingPanel";
+            m_fastList.width = WIDTHLEFT - 5;
+            m_fastList.height = height - offset - 110;
+            m_fastList.canSelect = true;
+            m_fastList.relativePosition = new Vector3(5, offset + 35);
 
             // Configuration file buttons
             UILabel configLabel = this.AddUIComponent<UILabel>();
@@ -178,94 +179,111 @@ namespace AdvancedVehicleOptions.GUI
             m_save.relativePosition = new Vector3(105, height - 40);
 
             // Preview
-            m_preview = AddUIComponent<UITextureSprite>();
-            m_preview.width = WIDTHRIGHT - 10;
-            m_preview.height = HEIGHT - offset - 335;
-            m_preview.relativePosition = new Vector3(WIDTHLEFT + 5, offset);
+            UIPanel panel = AddUIComponent<UIPanel>();
+            panel.backgroundSprite = "GenericPanel";
+            panel.width = WIDTHRIGHT - 10;
+            panel.height = HEIGHT - 375;
+            panel.relativePosition = new Vector3(WIDTHLEFT + 5, offset);
 
-            //m_previewCamera = new PreviewCamera();
-            //m_previewCamera.alpha = true;
-            //m_previewCamera.preview = m_preview;
+            m_preview = panel.AddUIComponent<UITextureSprite>();
+            m_preview.size = panel.size;
+            m_preview.relativePosition = Vector3.zero;
+
+            m_previewRenderer = gameObject.AddComponent<PreviewRenderer>();
+            m_previewRenderer.size = m_preview.size * 2; // Twice the size for anti-aliasing
+
+            m_preview.texture = m_previewRenderer.texture;
 
             // Option panel
             m_optionPanel = AddUIComponent<UIOptionPanel>();
-            m_optionPanel.relativePosition = new Vector3(WIDTHLEFT, height - 330);
+            m_optionPanel.relativePosition = new Vector3(WIDTHLEFT, height - 370);
+
+            panel.BringToFront();
 
             // Event handlers
-            m_optionPanel.eventEnableCheckChanged += new PropertyChangedEventHandler<bool>(OnEnableStateChanged);
-            m_reload.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.LoadConfig(this));
-            m_save.eventClick += new MouseEventHandler((c, t) => AdvancedVehicleOptions.SaveConfig());
+            m_fastList.eventSelectedIndexChanged += OnSelectedItemChanged; 
+            m_optionPanel.eventEnableCheckChanged += OnEnableStateChanged;
+            m_reload.eventClick += (c, t) => AdvancedVehicleOptions.LoadConfig(this);
+            m_save.eventClick += (c, t) => AdvancedVehicleOptions.SaveConfig();
+
+            panel.eventMouseDown += (c, p) =>
+            {
+                eventMouseMove += RotateCamera;
+                m_previewRenderer.Render();
+            };
+
+            panel.eventMouseUp += (c, p) =>
+            {
+                eventMouseMove -= RotateCamera;
+                m_previewRenderer.Render();
+            };
+
+            panel.eventMouseWheel += (c, p) =>
+            {
+                m_previewRenderer.zoom -= Mathf.Sign(p.wheelDelta) * 0.25f;
+                m_previewRenderer.Render();
+            };
+        }
+
+        private void RotateCamera(UIComponent c, UIMouseEventParameter p)
+        {
+            m_previewRenderer.cameraRotation -= p.moveDelta.x / m_preview.width * 360f;
+            m_previewRenderer.Render();
         }
 
         private void PopulateList()
         {
-            ClearList();
-
-            m_itemList = new UIVehicleItem[m_optionsList.Length];
+            m_fastList.rowsData.Clear();
+            m_fastList.selectedIndex = -1;
             for (int i = 0; i < m_optionsList.Length; i++)
             {
-                try
+                if (m_optionsList[i] != null &&
+                    (m_category.selectedIndex == 0 || (int)m_optionsList[i].category == m_category.selectedIndex - 1) &&
+                    (String.IsNullOrEmpty(m_search.text.Trim()) || m_optionsList[i].localizedName.ToLower().Contains(m_search.text.Trim().ToLower())))
                 {
-                    m_itemList[i] = m_scrollablePanel.AddUIComponent<UIVehicleItem>();
+                    m_fastList.rowsData.Add(m_optionsList[i]);
                 }
-                catch
-                {
-                    DebugUtils.Log("Couldn't create UIVehicleItem.");
-                    UIUtils.DestroyDeeply(GameObject.Find("AdvancedVehicleOptions").GetComponent<UIComponent>());
-                    return;
-                }
-
-                if ((i % 2) == 1)
-                {
-                    m_itemList[i].background.backgroundSprite = "UnlockingItemBackground";
-                    m_itemList[i].background.color = new Color32(0, 0, 0, 128);
-                }
-
-                m_itemList[i].eventClick += new MouseEventHandler(OnSelectedItemChanged);
-                m_itemList[i].options = m_optionsList[i];
-            }
-        }
-
-        private void ClearList()
-        {
-            if (m_itemList == null) return;
-
-            for (int i = 0; i < m_itemList.Length; i++)
-                Destroy(m_itemList[i]);
-
-            m_itemList = null;
-        }
-
-        protected void OnSelectedItemChanged(UIComponent component, UIMouseEventParameter p)
-        {
-            for (int i = 0; i < m_itemList.Length; i++)
-            {
-                if ((i % 2) == 1)
-                {
-                    m_itemList[i].background.backgroundSprite = "UnlockingItemBackground";
-                    m_itemList[i].background.color = new Color32(0, 0, 0, 128);
-                }
-                else
-                {
-                    m_itemList[i].background.backgroundSprite = null;
-                }
-
-                m_itemList[i].Refresh();
             }
 
-            if (component == null) return;
-            UIVehicleItem item = (UIVehicleItem)component;
-            item.background.backgroundSprite = "ListItemHighlight";
-            item.background.color = new Color32(255, 255, 255, 255);
+            m_fastList.rowHeight = 40f;
+            m_fastList.DisplayAt(0);
+            m_fastList.selectedIndex = 0;
 
-            m_optionPanel.Show(item.options);
-            item.options.prefab.RenderMesh();
+            m_optionPanel.isVisible = m_fastList.rowsData.m_size > 0;
+            m_preview.parent.isVisible = m_optionPanel.isVisible;
+        }
+        protected void OnSelectedItemChanged(UIComponent component, int i)
+        {
+            m_previewRenderer.mesh = null;
+
+            VehicleOptions options = m_fastList.rowsData[i] as VehicleOptions;
+
+            m_optionPanel.Show(options);
+            m_preview.parent.isVisible = true;
+
+            m_previewRenderer.mesh = options.prefab.m_mesh;
+            m_previewRenderer.material = options.prefab.m_material;
+            Color color = options.color0;
+            color.a = 0; // Fixes the wrong lighting on one half of the vehicle
+            m_previewRenderer.material.color = color;
+            m_previewRenderer.cameraRotation = 120f;
+            m_previewRenderer.zoom = 3f;
+            m_previewRenderer.Render();
         }
 
         protected void OnEnableStateChanged(UIComponent component, bool state)
         {
-            for (int i = 0; i < m_itemList.Length; i++)
-                m_itemList[i].Refresh();
+            m_fastList.DisplayAt(m_fastList.listPosition);
+        }
+
+        public void ChangePreviewColor(Color color)
+        {
+            if (m_previewRenderer.material != null && m_previewRenderer.material.color != color)
+            {
+                color.a = 0; // Fixes the wrong lighting on one half of the vehicle
+                m_previewRenderer.material.color = color;
+                m_previewRenderer.Render();
+            }
         }
     }
 

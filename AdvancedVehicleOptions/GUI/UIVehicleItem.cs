@@ -3,7 +3,7 @@ using ColossalFramework.UI;
 
 namespace AdvancedVehicleOptions.GUI
 {
-    public class UIVehicleItem : UIPanel
+    public class UIVehicleItem : UIPanel, IUIFastListRow
     {
         private UISprite m_icon;
         private UISprite m_disabled;
@@ -47,10 +47,6 @@ namespace AdvancedVehicleOptions.GUI
             height = 40;
 
             m_icon = AddUIComponent<UISprite>();
-            m_icon.spriteName = UIMainPanel.vehicleIconList[(int)m_options.category];
-            m_icon.size = m_icon.spriteInfo.pixelSize;
-            UIUtils.ResizeIcon(m_icon, new Vector2(32,32));
-            m_icon.relativePosition = new Vector3(10, Mathf.Floor((height - m_icon.height) / 2));
 
             m_disabled = AddUIComponent<UISprite>();
             m_disabled.spriteName = "Niet";
@@ -60,16 +56,7 @@ namespace AdvancedVehicleOptions.GUI
 
             m_name = AddUIComponent<UILabel>();
             m_name.textScale = 0.9f;
-            m_name.text = m_options.localizedName;
             m_name.relativePosition = new Vector3(55, 13);
-
-            Refresh();
-        }
-
-        public void Refresh()
-        {
-            m_disabled.isVisible = !options.enabled;
-            m_name.textColor = options.enabled ? new Color32(255, 255, 255, 255) : new Color32(128, 128, 128, 255);
         }
 
         protected override void OnClick(UIMouseEventParameter p)
@@ -77,6 +64,60 @@ namespace AdvancedVehicleOptions.GUI
             base.OnClick(p);
 
             m_name.textColor = new Color32(255, 255, 255, 255);
+        }
+
+        public void Display(object data, bool isRowOdd)
+        {
+            m_options = data as VehicleOptions;
+
+            if (m_icon == null || m_options == null) return;
+
+            m_icon.spriteName = UIMainPanel.vehicleIconList[(int)m_options.category];
+            m_icon.size = m_icon.spriteInfo.pixelSize;
+            UIUtils.ResizeIcon(m_icon, new Vector2(32, 32));
+            m_icon.relativePosition = new Vector3(10, Mathf.Floor((height - m_icon.height) / 2));
+
+            m_name.text = m_options.localizedName;
+
+            m_disabled.isVisible = !options.enabled;
+            m_name.textColor = options.enabled ? new Color32(255, 255, 255, 255) : new Color32(128, 128, 128, 255);
+
+            if (isRowOdd)
+            {
+                background.backgroundSprite = "UnlockingItemBackground";
+                background.color = new Color32(0, 0, 0, 128);
+            }
+            else
+            {
+                background.backgroundSprite = null;
+            }
+        }
+
+        public void Select(bool isRowOdd)
+        {
+            if (m_icon == null || m_options == null) return;
+
+            m_name.textColor = new Color32(255, 255, 255, 255);
+
+            background.backgroundSprite = "ListItemHighlight";
+            background.color = new Color32(255, 255, 255, 255);
+        }
+
+        public void Deselect(bool isRowOdd)
+        {
+            if (m_icon == null || m_options == null) return;
+
+            m_name.textColor = options.enabled ? new Color32(255, 255, 255, 255) : new Color32(128, 128, 128, 255);
+
+            if (isRowOdd)
+            {
+                background.backgroundSprite = "UnlockingItemBackground";
+                background.color = new Color32(0, 0, 0, 128);
+            }
+            else
+            {
+                background.backgroundSprite = null;
+            }
         }
 
     }

@@ -68,7 +68,7 @@ namespace AdvancedVehicleOptions.GUI
             m_drag.target = parent;
 
             m_icon.spriteName = iconSprite;
-            m_icon.relativePosition = new Vector3(5, 0);
+            m_icon.relativePosition = new Vector3(10, 0);
 
             m_title.relativePosition = new Vector3(50, 13);
             m_title.text = title;

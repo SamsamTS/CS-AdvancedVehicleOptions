@@ -69,6 +69,57 @@ namespace AdvancedVehicleOptions.GUI
             return textField;
         }
 
+        public static UIDropDown CreateDropDown(UIComponent parent)
+        {
+            UIDropDown dropDown = parent.AddUIComponent<UIDropDown>();
+            dropDown.size = new Vector2(90f, 30f);
+            dropDown.listBackground = "GenericPanelLight";
+            dropDown.itemHeight = 30;
+            dropDown.itemHover = "ListItemHover";
+            dropDown.itemHighlight = "ListItemHighlight";
+            dropDown.normalBgSprite = "ButtonMenu";
+            dropDown.disabledBgSprite = "ButtonMenuDisabled";
+            dropDown.hoveredBgSprite = "ButtonMenuHovered";
+            dropDown.focusedBgSprite = "ButtonMenu";
+            dropDown.listWidth = 90;
+            dropDown.listHeight = 500;
+            dropDown.foregroundSpriteMode = UIForegroundSpriteMode.Stretch;
+            dropDown.popupColor = new Color32(45, 52, 61, 255);
+            dropDown.popupTextColor = new Color32(170, 170, 170, 255);
+            dropDown.zOrder = 1;
+            dropDown.textScale = 0.8f;
+            dropDown.verticalAlignment = UIVerticalAlignment.Middle;
+            dropDown.horizontalAlignment = UIHorizontalAlignment.Left;
+            dropDown.selectedIndex = 0;
+            dropDown.textFieldPadding = new RectOffset(8, 0, 8, 0);
+            dropDown.itemPadding = new RectOffset(14, 0, 8, 0);
+
+            UIButton button = dropDown.AddUIComponent<UIButton>();
+            dropDown.triggerButton = button;
+            button.text = "";
+            button.size = dropDown.size;
+            button.relativePosition = new Vector3(0f, 0f);
+            button.textVerticalAlignment = UIVerticalAlignment.Middle;
+            button.textHorizontalAlignment = UIHorizontalAlignment.Left;
+            button.normalFgSprite = "IconDownArrow";
+            button.hoveredFgSprite = "IconDownArrowHovered";
+            button.pressedFgSprite = "IconDownArrowPressed";
+            button.focusedFgSprite = "IconDownArrowFocused";
+            button.disabledFgSprite = "IconDownArrowDisabled";
+            button.foregroundSpriteMode = UIForegroundSpriteMode.Fill;
+            button.horizontalAlignment = UIHorizontalAlignment.Right;
+            button.verticalAlignment = UIVerticalAlignment.Middle;
+            button.zOrder = 0;
+            button.textScale = 0.8f;
+
+            dropDown.eventSizeChanged += new PropertyChangedEventHandler<Vector2>((c, t) =>
+            {
+                button.size = t; dropDown.listWidth = (int)t.x;
+            });
+
+            return dropDown;
+        }
+
         public static UIColorField CreateColorField(UIComponent parent)
         {
             //UIColorField colorField = parent.AddUIComponent<UIColorField>();
@@ -76,6 +127,26 @@ namespace AdvancedVehicleOptions.GUI
             // Probably doesn't work when on main menu screen and such as no ColorField exists.
             UIColorField colorField = UnityEngine.Object.Instantiate<GameObject>(UnityEngine.Object.FindObjectOfType<UIColorField>().gameObject).GetComponent<UIColorField>();
             parent.AttachUIComponent(colorField.gameObject);
+
+            // Reset most everything
+            colorField.anchor = UIAnchorStyle.Left | UIAnchorStyle.Top;
+            colorField.arbitraryPivotOffset = new Vector2(0, 0);
+            colorField.autoSize = false;
+            colorField.bringTooltipToFront = true;
+            colorField.builtinKeyNavigation = true;
+            colorField.canFocus = true;
+            colorField.enabled = true;
+            colorField.isEnabled = true;
+            colorField.isInteractive = true;
+            colorField.isLocalized = false;
+            colorField.isTooltipLocalized = false;
+            colorField.isVisible = true;
+            colorField.pivot = UIPivotPoint.TopLeft;
+            colorField.useDropShadow = false;
+            colorField.useGradient = false;
+            colorField.useGUILayout = true;
+            colorField.useOutline = false;
+            colorField.verticalAlignment = UIVerticalAlignment.Top;
 
             colorField.size = new Vector2(40f, 26f);
             colorField.normalBgSprite = "ColorPickerOutline";

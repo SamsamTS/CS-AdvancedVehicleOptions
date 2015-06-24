@@ -32,15 +32,18 @@ namespace AdvancedVehicleOptions
         public const string version = "1.1";
         #endregion
 
+        private static GameObject m_gameObject;
         private static VehicleOptions[] m_options;
         private static VehicleOptions[] m_default;
         private static GUI.UIMainPanel m_mainPanel;
 
         private static List<VehicleInfo> m_removeList = new List<VehicleInfo>();
+        private static bool m_removeAll = false;
         private static bool m_removeThreadRunning = false;
 
         private static List<VehicleInfo> m_removeParkedList = new List<VehicleInfo>();
         private static bool m_removeParkedThreadRunning = false;
+        private static bool m_removeParkedAll = false;
 
         private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -58,10 +61,12 @@ namespace AdvancedVehicleOptions
 
             // Creating GUI
             UIView view = UIView.GetAView();
+            m_gameObject = new GameObject("AdvancedVehicleOptions");
+            m_gameObject.transform.SetParent(view.transform);
 
             try
             {
-                m_mainPanel = (GUI.UIMainPanel)view.AddUIComponent(typeof(GUI.UIMainPanel));
+                m_mainPanel = m_gameObject.AddComponent<GUI.UIMainPanel>();
                 DebugUtils.Log("UIMainPanel created");
             }
             catch
@@ -203,6 +208,13 @@ namespace AdvancedVehicleOptions
         {
             if (parked)
             {
+                if(options == null)
+                {
+                    m_removeParkedAll = true;
+                    m_removeParkedList.Clear();
+                    if (!m_removeParkedThreadRunning) new EnumerableActionThread(ActionRemoveParkedAll);
+                    return;
+                }
                 if (!m_removeParkedList.Contains(options.prefab))
                 {
                     m_removeParkedList.Add(options.prefab);
@@ -211,6 +223,13 @@ namespace AdvancedVehicleOptions
             }
             else
             {
+                if (options == null)
+                {
+                    m_removeAll = true;
+                    m_removeList.Clear();
+                    if (!m_removeThreadRunning) new EnumerableActionThread(ActionRemoveExistingAll);
+                    return;
+                }
                 if (!m_removeList.Contains(options.prefab))
                 {
                     m_removeList.Add(options.prefab);
@@ -225,18 +244,26 @@ namespace AdvancedVehicleOptions
 
             VehicleManager vehicleManager =  Singleton<VehicleManager>.instance;
             
-
             while(m_removeList.Count != 0)
             {
                 VehicleInfo[] prefabs = m_removeList.ToArray();
 
                 for (ushort i = 0; i < vehicleManager.m_vehicles.m_size; i++)
                 {
-                    if (vehicleManager.m_vehicles.m_buffer[i].Info == null) continue;
-                    if (prefabs.Contains(vehicleManager.m_vehicles.m_buffer[i].Info))
-                        vehicleManager.ReleaseVehicle(i);
+                    if (m_removeAll) break;
+                    if (vehicleManager.m_vehicles.m_buffer[i].Info != null)
+                    {
+                        if (prefabs.Contains(vehicleManager.m_vehicles.m_buffer[i].Info))
+                            vehicleManager.ReleaseVehicle(i);
+                    }
 
                     if (i % 256 == 255) yield return i;
+                }
+
+                if(m_removeAll)
+                {
+                    new EnumerableActionThread(ActionRemoveExistingAll);
+                    break;
                 }
 
                 m_removeList.RemoveRange(0, prefabs.Count());
@@ -251,28 +278,68 @@ namespace AdvancedVehicleOptions
 
             VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
 
-
             while (m_removeParkedList.Count != 0)
             {
                 VehicleInfo[] prefabs = m_removeParkedList.ToArray();
 
                 for (ushort i = 0; i < vehicleManager.m_parkedVehicles.m_size; i++)
                 {
-                    if (vehicleManager.m_parkedVehicles.m_buffer[i].Info == null) continue;
-                    if (prefabs.Contains(vehicleManager.m_parkedVehicles.m_buffer[i].Info))
-                        vehicleManager.ReleaseParkedVehicle(i);
+                    if (m_removeParkedAll) break;
+                    if (vehicleManager.m_parkedVehicles.m_buffer[i].Info != null)
+                    {
+                        if (prefabs.Contains(vehicleManager.m_parkedVehicles.m_buffer[i].Info))
+                            vehicleManager.ReleaseParkedVehicle(i);
+                    }
 
                     if (i % 256 == 255) yield return i;
                 }
 
+                if (m_removeParkedAll)
+                {
+                    new EnumerableActionThread(ActionRemoveParkedAll);
+                    break;
+                }
                 m_removeParkedList.RemoveRange(0, prefabs.Count());
             }
 
             m_removeParkedThreadRunning = false;
         }
 
+        public static IEnumerator ActionRemoveExistingAll(ThreadBase t)
+        {
+            m_removeThreadRunning = true;
+
+            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
+
+            for (ushort i = 0; i < vehicleManager.m_vehicles.m_size; i++)
+            {
+                if (vehicleManager.m_vehicles.m_buffer[i].Info != null)
+                    vehicleManager.ReleaseVehicle(i);
+
+                if (i % 256 == 255) yield return i;
+            }
+
+            m_removeThreadRunning = false;
+        }
+
+        public static IEnumerator ActionRemoveParkedAll(ThreadBase t)
+        {
+            m_removeParkedThreadRunning = true;
+
+            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
+
+            for (ushort i = 0; i < vehicleManager.m_parkedVehicles.m_size; i++)
+            {
+                if (vehicleManager.m_parkedVehicles.m_buffer[i].Info != null)
+                    vehicleManager.ReleaseParkedVehicle(i);
+
+                if (i % 256 == 255) yield return i;
+            }
+
+            m_removeParkedThreadRunning = false;
+        }
+
         #region Apply
-       
         public static void ApplyOptions()
         {
             if (m_options == null) return;
@@ -280,9 +347,11 @@ namespace AdvancedVehicleOptions
             for (int i = 0; i < m_options.Length; i++)
             {
                 ApplyMaxSpeed(m_options[i]);
+                ApplyAcceleration(m_options[i]);
                 ApplyColors(m_options[i]);
                 ApplySpawning(m_options[i]);
                 ApplyBackEngine(m_options[i]);
+                ApplyCapacity(m_options[i]);
             }
         }
 
@@ -292,6 +361,11 @@ namespace AdvancedVehicleOptions
                 options.prefab.m_maxSpeed = options.maxSpeed;
             //else
                 //DebugUtils.Log("Max Speed not applied: custom Vehicle AI detected");
+        }
+
+        public static void ApplyAcceleration(VehicleOptions options)
+        {
+            options.prefab.m_acceleration= options.acceleration;
         }
 
         public static void ApplyColors(VehicleOptions options)
@@ -329,6 +403,49 @@ namespace AdvancedVehicleOptions
             
             // TODO Apply on existing trains
             //EnumerableActionThread thread = new EnumerableActionThread(ActionAddBackEngine);
+        }
+
+        public static void ApplyCapacity(VehicleOptions options)
+        {
+            if (!options.hasCapacity) return;
+
+            VehicleAI ai;
+
+            ai = options.prefab.m_vehicleAI as AmbulanceAI;
+            if (ai != null) ((AmbulanceAI)ai).m_patientCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as BusAI;
+            if (ai != null) ((BusAI)ai).m_passengerCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as CargoShipAI;
+            if (ai != null) ((CargoShipAI)ai).m_cargoCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as CargoTrainAI;
+            if (ai != null) ((CargoTrainAI)ai).m_cargoCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as CargoTruckAI;
+            if (ai != null) ((CargoTruckAI)ai).m_cargoCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as GarbageTruckAI;
+            if (ai != null) ((GarbageTruckAI)ai).m_cargoCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as FireTruckAI;
+            if (ai != null) ((FireTruckAI)ai).m_fireFightingRate = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as HearseAI;
+            if (ai != null) ((HearseAI)ai).m_corpseCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as PassengerPlaneAI;
+            if (ai != null) ((PassengerPlaneAI)ai).m_passengerCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as PassengerShipAI;
+            if (ai != null) ((PassengerShipAI)ai).m_passengerCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as PassengerTrainAI;
+            if (ai != null) ((PassengerTrainAI)ai).m_passengerCapacity = options.capacity;
+
+            ai = options.prefab.m_vehicleAI as PoliceCarAI;
+            if (ai != null) ((PoliceCarAI)ai).m_crimeCapacity = options.capacity;
         }
 
         public static void RestoreOptions()

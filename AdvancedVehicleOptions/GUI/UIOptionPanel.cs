@@ -6,6 +6,7 @@ namespace AdvancedVehicleOptions.GUI
     public class UIOptionPanel : UIPanel
     {
         private UITextField m_maxSpeed;
+        private UITextField m_acceleration;
         private UIColorField m_color0;
         private UIColorField m_color1;
         private UIColorField m_color2;
@@ -16,6 +17,8 @@ namespace AdvancedVehicleOptions.GUI
         private UITextField m_color3_hex;
         private UICheckBox m_enabled;
         private UICheckBox m_addBackEngine;
+        private UITextField m_capacity;
+        private UILabel m_removeLabel;
         private UIButton m_clearVehicles;
         private UIButton m_clearParked;
 
@@ -31,7 +34,7 @@ namespace AdvancedVehicleOptions.GUI
             canFocus = true;
             isInteractive = true;
             width = 315;
-            height = 330;
+            height = 370;
 
             SetupControls();
 
@@ -44,7 +47,10 @@ namespace AdvancedVehicleOptions.GUI
 
             m_options = options;
 
+            if (m_color0 == null) return;
+
             m_maxSpeed.text = Mathf.RoundToInt(options.maxSpeed * 5).ToString();
+            m_acceleration.text = options.acceleration.ToString();
             m_color0.selectedColor = options.color0;
             m_color1.selectedColor = options.color1;
             m_color2.selectedColor = options.color2;
@@ -57,6 +63,13 @@ namespace AdvancedVehicleOptions.GUI
             //m_enabled.isVisible = !options.isTrailer;
             m_addBackEngine.isChecked = options.addBackEngine;
             m_addBackEngine.isVisible = (options.prefab.m_vehicleType == VehicleInfo.VehicleType.Train) && options.hasTrailer;
+
+            m_capacity.text = options.capacity.ToString();
+            m_capacity.parent.isVisible = options.hasCapacity;
+
+            string name = options.localizedName;
+            if (name.Length > 16) name = name.Substring(0, 16) + "...";
+            m_removeLabel.text = "Remove vehicles (" + name + "):";
 
             m_initialized = true;
         }
@@ -71,73 +84,106 @@ namespace AdvancedVehicleOptions.GUI
             panel.backgroundSprite = "UnlockingPanel";
             panel.width = width - 10;
             panel.height = height - offset - 75;
-            panel.zOrder = 0;
             panel.relativePosition = new Vector3(5, offset);
 
             // Max Speed
-            UILabel maxSpeedLabel = this.AddUIComponent<UILabel>();
+            UILabel maxSpeedLabel = panel.AddUIComponent<UILabel>();
             maxSpeedLabel.text = "Maximum Speed:";
             maxSpeedLabel.textScale = 0.9f;
-            maxSpeedLabel.relativePosition = new Vector3(20, offset + 15);
+            maxSpeedLabel.relativePosition = new Vector3(15, 15);
 
-            m_maxSpeed = UIUtils.CreateTextField(this);
+            m_maxSpeed = UIUtils.CreateTextField(panel);
             m_maxSpeed.numericalOnly = true;
             m_maxSpeed.width = 75;
-            m_maxSpeed.relativePosition = new Vector3(20, offset + 35);
+            m_maxSpeed.relativePosition = new Vector3(15, 35);
 
-            UILabel kmh = this.AddUIComponent<UILabel>();
+            UILabel kmh = panel.AddUIComponent<UILabel>();
             kmh.text = "km/h";
             kmh.textScale = 0.9f;
-            kmh.relativePosition = new Vector3(100, offset + 40);
+            kmh.relativePosition = new Vector3(95, 40);
+
+            // Acceleration
+            UILabel accelerationLabel = panel.AddUIComponent<UILabel>();
+            accelerationLabel.text = "Acceleration:";
+            accelerationLabel.textScale = 0.9f;
+            accelerationLabel.relativePosition = new Vector3(160, 15);
+
+            m_acceleration = UIUtils.CreateTextField(panel);
+            m_acceleration.numericalOnly = true;
+            m_acceleration.allowFloats = true;
+            m_acceleration.width = 75;
+            m_acceleration.relativePosition = new Vector3(160, 35);
 
             // Colors
-            UILabel colorsLabel = this.AddUIComponent<UILabel>();
+            UILabel colorsLabel = panel.AddUIComponent<UILabel>();
             colorsLabel.text = "Colors:";
             colorsLabel.textScale = 0.9f;
-            colorsLabel.relativePosition = new Vector3(20, offset + 70);
+            colorsLabel.relativePosition = new Vector3(15, 70);
 
-            m_color0 = UIUtils.CreateColorField(this);
-            m_color0.relativePosition = new Vector3(18 , offset + 90 - 2);
-            m_color0_hex = UIUtils.CreateTextField(this);
+            gameObject.AddComponent<UICustomControl>();
+
+            m_color0 = UIUtils.CreateColorField(panel);
+            m_color0.name = "AVO-color0";
+            m_color0.relativePosition = new Vector3(13 , 90 - 2);
+            m_color0_hex = UIUtils.CreateTextField(panel);
             m_color0_hex.maxLength = 6;
-            m_color0_hex.relativePosition = new Vector3(60, offset + 90);
+            m_color0_hex.relativePosition = new Vector3(55, 90);
 
-            m_color1 = UIUtils.CreateColorField(this);
-            m_color1.relativePosition = new Vector3(18, offset + 115 - 2);
-            m_color1_hex = UIUtils.CreateTextField(this);
+            m_color1 = UIUtils.CreateColorField(panel);
+            m_color1.name = "AVO-color1";
+            m_color1.relativePosition = new Vector3(13, 115 - 2);
+            m_color1_hex = UIUtils.CreateTextField(panel);
             m_color1_hex.maxLength = 6;
-            m_color1_hex.relativePosition = new Vector3(60, offset + 115);
+            m_color1_hex.relativePosition = new Vector3(55, 115);
 
-            m_color2 = UIUtils.CreateColorField(this);
-            m_color2.relativePosition = new Vector3(163, offset + 90 - 2);
-            m_color2_hex = UIUtils.CreateTextField(this);
+            m_color2 = UIUtils.CreateColorField(panel);
+            m_color2.name = "AVO-color2";
+            m_color2.relativePosition = new Vector3(158, 90 - 2);
+            m_color2_hex = UIUtils.CreateTextField(panel);
             m_color2_hex.maxLength = 6;
-            m_color2_hex.relativePosition = new Vector3(205, offset + 90);
+            m_color2_hex.relativePosition = new Vector3(200, 90);
 
-            m_color3 = UIUtils.CreateColorField(this);
-            m_color3.relativePosition = new Vector3(163, offset + 115 - 2);
-            m_color3_hex = UIUtils.CreateTextField(this);
+            m_color3 = UIUtils.CreateColorField(panel);
+            m_color3.name = "AVO-color3";
+            m_color3.relativePosition = new Vector3(158, 115 - 2);
+            m_color3_hex = UIUtils.CreateTextField(panel);
             m_color3_hex.maxLength = 6;
-            m_color3_hex.relativePosition = new Vector3(205, offset + 115);
+            m_color3_hex.relativePosition = new Vector3(200, 115);
 
             // Enable & BackEngine
-            m_enabled = UIUtils.CreateCheckBox(this);
+            m_enabled = UIUtils.CreateCheckBox(panel);
             m_enabled.text = "Allow this vehicle to spawn";
             m_enabled.isChecked = true;
             m_enabled.width = width - 40;
-            m_enabled.relativePosition = new Vector3(20, offset + 155); ;
+            m_enabled.relativePosition = new Vector3(15, 150); ;
 
-            m_addBackEngine = UIUtils.CreateCheckBox(this);
+            m_addBackEngine = UIUtils.CreateCheckBox(panel);
             m_addBackEngine.text = "Replace last car with engine";
             m_addBackEngine.isChecked = false;
             m_addBackEngine.width = width - 40;
-            m_addBackEngine.relativePosition = new Vector3(20, offset + 180);
+            m_addBackEngine.relativePosition = new Vector3(15, 175);
+
+            // Capacity
+            UIPanel capacityPanel = panel.AddUIComponent<UIPanel>();
+            capacityPanel.relativePosition = new Vector3(15, 200);
+
+            UILabel capacityLabel = capacityPanel.AddUIComponent<UILabel>();
+            capacityLabel.text = "Capacity:";
+            capacityLabel.textScale = 0.9f;
+            capacityLabel.relativePosition = Vector3.zero;
+
+            m_capacity = UIUtils.CreateTextField(capacityPanel);
+            m_capacity.numericalOnly = true;
+            m_capacity.width = 110;
+            m_capacity.relativePosition = new Vector3(0, 20);
+
+            panel.BringToFront();
 
             // Remove Vehicles
-            UILabel removeLabel = this.AddUIComponent<UILabel>();
-            removeLabel.text = "Remove vehicles:";
-            removeLabel.textScale = 0.9f;
-            removeLabel.relativePosition = new Vector3(10, height - 60);
+            m_removeLabel = this.AddUIComponent<UILabel>();
+            m_removeLabel.text = "Remove vehicles:";
+            m_removeLabel.textScale = 0.9f;
+            m_removeLabel.relativePosition = new Vector3(10, height - 60);
 
             m_clearVehicles = UIUtils.CreateButton(this);
             m_clearVehicles.text = "Driving";
@@ -150,23 +196,38 @@ namespace AdvancedVehicleOptions.GUI
             m_clearParked.relativePosition = new Vector3(105, height - 40);
 
             // Event handlers
-            m_maxSpeed.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnMaxSpeedSubmitted);
+            m_maxSpeed.eventTextSubmitted += OnMaxSpeedSubmitted;
+            m_acceleration.eventTextSubmitted += OnAccelerationSubmitted;
 
-            m_color0.eventSelectedColorChanged += new PropertyChangedEventHandler<Color>(OnColorChanged);
-            m_color1.eventSelectedColorChanged += new PropertyChangedEventHandler<Color>(OnColorChanged);
-            m_color2.eventSelectedColorChanged += new PropertyChangedEventHandler<Color>(OnColorChanged);
-            m_color3.eventSelectedColorChanged += new PropertyChangedEventHandler<Color>(OnColorChanged);
+            MouseEventHandler mousehandler = (c, p) => { (parent as UIMainPanel).ChangePreviewColor((c as UIColorField).selectedColor); };
 
-            m_color0_hex.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnColorHexSubmitted);
-            m_color1_hex.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnColorHexSubmitted);
-            m_color2_hex.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnColorHexSubmitted);
-            m_color3_hex.eventTextSubmitted += new PropertyChangedEventHandler<string>(OnColorHexSubmitted);
+            m_color0.eventMouseEnter += mousehandler;
+            m_color1.eventMouseEnter += mousehandler;
+            m_color2.eventMouseEnter += mousehandler;
+            m_color3.eventMouseEnter += mousehandler;
 
-            m_enabled.eventCheckChanged += new PropertyChangedEventHandler<bool>(OnCheckChanged);
-            m_addBackEngine.eventCheckChanged += new PropertyChangedEventHandler<bool>(OnCheckChanged);
+            m_color0_hex.eventMouseEnter += (c, p) => { (parent as UIMainPanel).ChangePreviewColor(m_color0.selectedColor); };
+            m_color1_hex.eventMouseEnter += (c, p) => { (parent as UIMainPanel).ChangePreviewColor(m_color1.selectedColor); };
+            m_color2_hex.eventMouseEnter += (c, p) => { (parent as UIMainPanel).ChangePreviewColor(m_color2.selectedColor); };
+            m_color3_hex.eventMouseEnter += (c, p) => { (parent as UIMainPanel).ChangePreviewColor(m_color3.selectedColor); };
 
-            m_clearVehicles.eventClick += new MouseEventHandler(OnClearVehicleClicked);
-            m_clearParked.eventClick += new MouseEventHandler(OnClearVehicleClicked);
+            m_color0.eventSelectedColorChanged += OnColorChanged;
+            m_color1.eventSelectedColorChanged += OnColorChanged;
+            m_color2.eventSelectedColorChanged += OnColorChanged;
+            m_color3.eventSelectedColorChanged += OnColorChanged;
+
+            m_color0_hex.eventTextSubmitted += OnColorHexSubmitted;
+            m_color1_hex.eventTextSubmitted += OnColorHexSubmitted;
+            m_color2_hex.eventTextSubmitted += OnColorHexSubmitted;
+            m_color3_hex.eventTextSubmitted += OnColorHexSubmitted;
+
+            m_enabled.eventCheckChanged += OnCheckChanged;
+            m_addBackEngine.eventCheckChanged += OnCheckChanged;
+
+            m_capacity.eventTextSubmitted += OnCapacitySubmitted;
+
+            m_clearVehicles.eventClick += OnClearVehicleClicked;
+            m_clearParked.eventClick += OnClearVehicleClicked;
         }
 
         protected void OnCheckChanged(UIComponent component, bool state)
@@ -198,8 +259,30 @@ namespace AdvancedVehicleOptions.GUI
             AdvancedVehicleOptions.ApplyMaxSpeed(m_options);
         }
 
+        protected void OnAccelerationSubmitted(UIComponent component, string text)
+        {
+            if (!m_initialized || m_options == null) return;
+            m_initialized = false;
+
+            m_options.acceleration = float.Parse(text);
+
+            AdvancedVehicleOptions.ApplyAcceleration(m_options);
+        }
+
+        protected void OnCapacitySubmitted(UIComponent component, string text)
+        {
+            if (!m_initialized || m_options == null) return;
+            m_initialized = false;
+
+            m_options.capacity = int.Parse(text);
+
+            AdvancedVehicleOptions.ApplyCapacity(m_options);
+        }
+
         protected void OnColorChanged(UIComponent component, Color color)
         {
+            (parent as UIMainPanel).ChangePreviewColor(color);
+
             if (!m_initialized || m_options == null) return;
             m_initialized = false;
 
@@ -256,7 +339,10 @@ namespace AdvancedVehicleOptions.GUI
         {
             if (m_options == null) return;
 
-            AdvancedVehicleOptions.ClearVehicles(m_options, component == m_clearParked);
+            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                AdvancedVehicleOptions.ClearVehicles(null, component == m_clearParked);
+            else
+                AdvancedVehicleOptions.ClearVehicles(m_options, component == m_clearParked);
         }
 
 
