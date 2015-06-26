@@ -29,7 +29,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.1";
+        public const string version = "1.1.2";
         #endregion
 
         private static GameObject m_gameObject;
@@ -78,6 +78,8 @@ namespace AdvancedVehicleOptions
             }
 
             CompileVehiclesList(true);
+
+            new EnumerableActionThread(BrokenVehicleFix);
         }
 
         /// <summary>
@@ -346,13 +348,18 @@ namespace AdvancedVehicleOptions
 
             for (int i = 0; i < m_options.Length; i++)
             {
-                ApplyMaxSpeed(m_options[i]);
-                ApplyAcceleration(m_options[i]);
-                ApplyColors(m_options[i]);
-                ApplySpawning(m_options[i]);
-                ApplyBackEngine(m_options[i]);
-                ApplyCapacity(m_options[i]);
+                ApplyOptions(m_options[i]);
             }
+        }
+
+        public static void ApplyOptions(VehicleOptions options)
+        {
+            ApplyMaxSpeed(options);
+            ApplyAcceleration(options);
+            ApplyColors(options);
+            ApplySpawning(options);
+            ApplyBackEngine(options);
+            ApplyCapacity(options);
         }
 
         public static void ApplyMaxSpeed(VehicleOptions options)
@@ -446,6 +453,40 @@ namespace AdvancedVehicleOptions
 
             ai = options.prefab.m_vehicleAI as PoliceCarAI;
             if (ai != null) ((PoliceCarAI)ai).m_crimeCapacity = options.capacity;
+        }
+
+        public static void RestoreDefault(VehicleOptions options)
+        {
+            for (int i = 0; i < m_default.Length; i++)
+            {
+                if (options.prefab == m_default[i].prefab)
+                {
+                    ApplyOptions(m_default[i]);
+
+                    options.acceleration = -1f;
+                    options.capacity = -1;
+
+                    options.SetPrefab(m_default[i].prefab);
+
+                    options.name = m_default[i].prefab.name;
+                    options.maxSpeed = m_default[i].prefab.m_maxSpeed;
+
+                    options.color0 = m_default[i].prefab.m_color0;
+                    options.color1 = m_default[i].prefab.m_color1;
+                    options.color2 = m_default[i].prefab.m_color2;
+                    options.color3 = m_default[i].prefab.m_color3;
+
+                    options.enabled = true;
+                    options.addBackEngine = false;
+
+                    if (m_default[i].prefab.m_vehicleType == VehicleInfo.VehicleType.Train && options.hasTrailer)
+                    {
+                        options.addBackEngine = m_default[i].prefab.m_trailers[m_default[i].prefab.m_trailers.Length - 1].m_info == m_default[i].prefab;
+                    }
+
+                    return;
+                }
+            }
         }
 
         public static void RestoreOptions()
@@ -582,6 +623,46 @@ namespace AdvancedVehicleOptions
                 type != typeof(HearseAI) ||
                 type != typeof(PassengerCarAI) ||
                 type != typeof(PoliceCarAI));
+        }
+
+        private IEnumerator BrokenVehicleFix(ThreadBase t)
+        {
+            // Fix broken vehicles ?
+            int count = 0;
+
+            Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
+            for (int i = 0; i < vehicles.m_size; i++)
+            {
+                if (count < 0) break;
+                if (vehicles.m_buffer[i].Info == null)
+                {
+                    try
+                    {
+                        Singleton<VehicleManager>.instance.ReleaseVehicle((ushort)i);
+                        count++;
+                    }
+                    catch { }
+                }
+                if (i % 256 == 255) yield return i;
+            }
+
+            Array16<VehicleParked> vehiclesParked = Singleton<VehicleManager>.instance.m_parkedVehicles;
+            for (int i = 0; i < vehiclesParked.m_size; i++)
+            {
+                if (count < 0) break;
+                if (vehiclesParked.m_buffer[i].Info == null)
+                {
+                    try
+                    {
+                        Singleton<VehicleManager>.instance.ReleaseParkedVehicle((ushort)i);
+                        count++;
+                    }
+                    catch { }
+                }
+                if (i % 256 == 255) yield return i;
+            }
+
+            if (count > 0) DebugUtils.Message(count + " broken vehicle(s) detected and removed.");
         }
     }
 }

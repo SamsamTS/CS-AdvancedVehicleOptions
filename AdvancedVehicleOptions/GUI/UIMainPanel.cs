@@ -64,7 +64,6 @@ namespace AdvancedVehicleOptions.GUI
             backgroundSprite = "UnlockingPanel2";
             isVisible = false;
             canFocus = true;
-            clipChildren = true;
             isInteractive = true;
             width = WIDTHLEFT + WIDTHRIGHT;
             height = HEIGHT;
@@ -196,9 +195,7 @@ namespace AdvancedVehicleOptions.GUI
 
             // Option panel
             m_optionPanel = AddUIComponent<UIOptionPanel>();
-            m_optionPanel.relativePosition = new Vector3(WIDTHLEFT, height - 370);
-
-            panel.BringToFront();
+            m_optionPanel.relativePosition = new Vector3(WIDTHLEFT, height - 330);
 
             // Event handlers
             m_fastList.eventSelectedIndexChanged += OnSelectedItemChanged; 

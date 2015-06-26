@@ -95,7 +95,7 @@ namespace AdvancedVehicleOptions
 
         public bool SetPrefab(VehicleInfo prefab)
         {
-            if (m_prefab != null || prefab == null) return false;
+            if (prefab == null) return false;
 
             m_prefab = prefab;
             m_placementStyle = prefab.m_placementStyle;

@@ -193,5 +193,38 @@ namespace AdvancedVehicleOptions.GUI
 
             GameObject.Destroy(component);
         }
+
+
+        public static void Debug(UIComponent component)
+        {
+            if (component == null) return;
+
+            UIComponent[] children = component.GetComponentsInChildren<UIComponent>();
+
+            if (children != null && children.Length > 0)
+            {
+                for (int i = 0; i < children.Length; i++)
+                {
+                    if (children[i].parent == component)
+                        Debug(children[i]);
+                }
+            }
+
+            component.enabled = true;
+            component.isVisible = true;
+            component.color = new Color32(0, 0, 0, 200);
+
+            UILabel c1 = component as UILabel;
+            if (c1 != null) c1.backgroundSprite = "GenericPanel";
+            UIPanel c2 = component as UIPanel;
+            if (c2 != null) c2.backgroundSprite = "GenericPanel";
+            UIInteractiveComponent c3 = component as UIInteractiveComponent;
+            if (c3 != null) c3.normalBgSprite = "GenericPanel";
+
+            component.eventMouseEnter += (c, o) =>
+            {
+                DebugUtils.Log(c.name);
+            };
+        }
     }
 }

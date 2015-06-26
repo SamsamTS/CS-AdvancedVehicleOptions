@@ -18,6 +18,7 @@ namespace AdvancedVehicleOptions.GUI
         private UICheckBox m_enabled;
         private UICheckBox m_addBackEngine;
         private UITextField m_capacity;
+        private UIButton m_restore;
         private UILabel m_removeLabel;
         private UIButton m_clearVehicles;
         private UIButton m_clearParked;
@@ -34,7 +35,7 @@ namespace AdvancedVehicleOptions.GUI
             canFocus = true;
             isInteractive = true;
             width = 315;
-            height = 370;
+            height = 330;
 
             SetupControls();
 
@@ -76,15 +77,13 @@ namespace AdvancedVehicleOptions.GUI
 
         private void SetupControls()
         {
-            float offset = 40f;
-
             UIPanel panel = AddUIComponent<UIPanel>();
             panel.gameObject.AddComponent<UICustomControl>();
 
             panel.backgroundSprite = "UnlockingPanel";
             panel.width = width - 10;
-            panel.height = height - offset - 75;
-            panel.relativePosition = new Vector3(5, offset);
+            panel.height = height - 75;
+            panel.relativePosition = new Vector3(5, 0);
 
             // Max Speed
             UILabel maxSpeedLabel = panel.AddUIComponent<UILabel>();
@@ -165,6 +164,7 @@ namespace AdvancedVehicleOptions.GUI
 
             // Capacity
             UIPanel capacityPanel = panel.AddUIComponent<UIPanel>();
+            capacityPanel.size = Vector2.zero;
             capacityPanel.relativePosition = new Vector3(15, 200);
 
             UILabel capacityLabel = capacityPanel.AddUIComponent<UILabel>();
@@ -177,7 +177,11 @@ namespace AdvancedVehicleOptions.GUI
             m_capacity.width = 110;
             m_capacity.relativePosition = new Vector3(0, 20);
 
-            panel.BringToFront();
+            // Restore default
+            m_restore = UIUtils.CreateButton(panel);
+            m_restore.text = "Restore default";
+            m_restore.width = 130;
+            m_restore.relativePosition = new Vector3(160, 215);
 
             // Remove Vehicles
             m_removeLabel = this.AddUIComponent<UILabel>();
@@ -194,6 +198,8 @@ namespace AdvancedVehicleOptions.GUI
             m_clearParked.text = "Parked";
             m_clearParked.width = 90f;
             m_clearParked.relativePosition = new Vector3(105, height - 40);
+
+            panel.BringToFront();
 
             // Event handlers
             m_maxSpeed.eventTextSubmitted += OnMaxSpeedSubmitted;
@@ -225,6 +231,16 @@ namespace AdvancedVehicleOptions.GUI
             m_addBackEngine.eventCheckChanged += OnCheckChanged;
 
             m_capacity.eventTextSubmitted += OnCapacitySubmitted;
+
+            m_restore.eventClick += (c, p) =>
+            {
+                bool isEnabled = m_options.enabled;
+                AdvancedVehicleOptions.RestoreDefault(m_options);
+                Show(m_options);
+
+                if (m_options.enabled != isEnabled)
+                    eventEnableCheckChanged(this, m_options.enabled);
+            };
 
             m_clearVehicles.eventClick += OnClearVehicleClicked;
             m_clearParked.eventClick += OnClearVehicleClicked;
@@ -344,8 +360,6 @@ namespace AdvancedVehicleOptions.GUI
             else
                 AdvancedVehicleOptions.ClearVehicles(m_options, component == m_clearParked);
         }
-
-
     }
 
 }
