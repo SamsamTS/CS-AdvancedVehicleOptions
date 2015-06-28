@@ -72,6 +72,8 @@ namespace AdvancedVehicleOptions.GUI
             if (name.Length > 16) name = name.Substring(0, 16) + "...";
             m_removeLabel.text = "Remove vehicles (" + name + "):";
 
+            (parent as UIMainPanel).ChangePreviewColor(m_color0.selectedColor);
+
             m_initialized = true;
         }
 
@@ -205,17 +207,17 @@ namespace AdvancedVehicleOptions.GUI
             m_maxSpeed.eventTextSubmitted += OnMaxSpeedSubmitted;
             m_acceleration.eventTextSubmitted += OnAccelerationSubmitted;
 
-            MouseEventHandler mousehandler = (c, p) => { (parent as UIMainPanel).ChangePreviewColor((c as UIColorField).selectedColor); };
+            MouseEventHandler mousehandler = (c, p) => { if (m_initialized) (parent as UIMainPanel).ChangePreviewColor((c as UIColorField).selectedColor); };
 
             m_color0.eventMouseEnter += mousehandler;
             m_color1.eventMouseEnter += mousehandler;
             m_color2.eventMouseEnter += mousehandler;
             m_color3.eventMouseEnter += mousehandler;
 
-            m_color0_hex.eventMouseEnter += (c, p) => { (parent as UIMainPanel).ChangePreviewColor(m_color0.selectedColor); };
-            m_color1_hex.eventMouseEnter += (c, p) => { (parent as UIMainPanel).ChangePreviewColor(m_color1.selectedColor); };
-            m_color2_hex.eventMouseEnter += (c, p) => { (parent as UIMainPanel).ChangePreviewColor(m_color2.selectedColor); };
-            m_color3_hex.eventMouseEnter += (c, p) => { (parent as UIMainPanel).ChangePreviewColor(m_color3.selectedColor); };
+            m_color0_hex.eventMouseEnter += (c, p) => { if (m_initialized) (parent as UIMainPanel).ChangePreviewColor(m_color0.selectedColor); };
+            m_color1_hex.eventMouseEnter += (c, p) => { if (m_initialized) (parent as UIMainPanel).ChangePreviewColor(m_color1.selectedColor); };
+            m_color2_hex.eventMouseEnter += (c, p) => { if (m_initialized) (parent as UIMainPanel).ChangePreviewColor(m_color2.selectedColor); };
+            m_color3_hex.eventMouseEnter += (c, p) => { if (m_initialized) (parent as UIMainPanel).ChangePreviewColor(m_color3.selectedColor); };
 
             m_color0.eventSelectedColorChanged += OnColorChanged;
             m_color1.eventSelectedColorChanged += OnColorChanged;
@@ -234,8 +236,9 @@ namespace AdvancedVehicleOptions.GUI
 
             m_restore.eventClick += (c, p) =>
             {
+                m_initialized = false;
                 bool isEnabled = m_options.enabled;
-                AdvancedVehicleOptions.RestoreDefault(m_options);
+                DefaultOptions.Restore(m_options.prefab);
                 Show(m_options);
 
                 if (m_options.enabled != isEnabled)
@@ -254,13 +257,11 @@ namespace AdvancedVehicleOptions.GUI
             if (component == m_enabled && m_options.enabled != state)
             {
                 m_options.enabled = state;
-                AdvancedVehicleOptions.ApplySpawning(m_options);
                 eventEnableCheckChanged(this, state);
             }
             else
             {
                 m_options.addBackEngine = m_addBackEngine.isChecked;
-                AdvancedVehicleOptions.ApplyBackEngine(m_options);
             }
             m_initialized = true;
         }
@@ -271,8 +272,6 @@ namespace AdvancedVehicleOptions.GUI
             m_initialized = false;
 
             m_options.maxSpeed = float.Parse(text) / 5f;
-
-            AdvancedVehicleOptions.ApplyMaxSpeed(m_options);
         }
 
         protected void OnAccelerationSubmitted(UIComponent component, string text)
@@ -281,8 +280,6 @@ namespace AdvancedVehicleOptions.GUI
             m_initialized = false;
 
             m_options.acceleration = float.Parse(text);
-
-            AdvancedVehicleOptions.ApplyAcceleration(m_options);
         }
 
         protected void OnCapacitySubmitted(UIComponent component, string text)
@@ -291,16 +288,14 @@ namespace AdvancedVehicleOptions.GUI
             m_initialized = false;
 
             m_options.capacity = int.Parse(text);
-
-            AdvancedVehicleOptions.ApplyCapacity(m_options);
         }
 
         protected void OnColorChanged(UIComponent component, Color color)
         {
-            (parent as UIMainPanel).ChangePreviewColor(color);
-
             if (!m_initialized || m_options == null) return;
             m_initialized = false;
+
+            (parent as UIMainPanel).ChangePreviewColor(color);
 
             m_options.color0 = m_color0.selectedColor;
             m_options.color1 = m_color1.selectedColor;
@@ -312,7 +307,6 @@ namespace AdvancedVehicleOptions.GUI
             m_color2_hex.text = m_options.color2.ToString();
             m_color3_hex.text = m_options.color3.ToString();
 
-            AdvancedVehicleOptions.ApplyColors(m_options);
             m_initialized = true;
         }
 
@@ -332,10 +326,10 @@ namespace AdvancedVehicleOptions.GUI
                 return;
             }
 
-            m_options.color0.Value = m_color0_hex.text;
-            m_options.color1.Value = m_color1_hex.text;
-            m_options.color2.Value = m_color2_hex.text;
-            m_options.color3.Value = m_color3_hex.text;
+            m_options.color0 = new HexaColor(m_color0_hex.text);
+            m_options.color1 = new HexaColor(m_color0_hex.text);
+            m_options.color2 = new HexaColor(m_color0_hex.text);
+            m_options.color3 = new HexaColor(m_color0_hex.text);
 
             m_color0_hex.text = m_options.color0.ToString();
             m_color1_hex.text = m_options.color1.ToString();
@@ -347,7 +341,6 @@ namespace AdvancedVehicleOptions.GUI
             m_color2.selectedColor = m_options.color2;
             m_color3.selectedColor = m_options.color3;
 
-            AdvancedVehicleOptions.ApplyColors(m_options);
             m_initialized = true;
         }
 

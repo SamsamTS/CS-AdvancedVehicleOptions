@@ -1,6 +1,4 @@
 ﻿using ColossalFramework;
-using ColossalFramework.UI;
-using System;
 using UnityEngine;
 
 namespace AdvancedVehicleOptions
@@ -89,7 +87,7 @@ namespace AdvancedVehicleOptions
         public void Render()
         {
             if (m_mesh == null) return;
-
+            
             float magnitude = m_bounds.extents.magnitude;
             float num = magnitude + 16f;
             float num2 = magnitude * m_zoom;
@@ -102,9 +100,16 @@ namespace AdvancedVehicleOptions
             Quaternion quaternion = Quaternion.Euler(-20f, 0f, 0f) * Quaternion.Euler(0f, m_rotation, 0f);
             Vector3 pos = quaternion * -m_bounds.center;
             Matrix4x4 matrix = Matrix4x4.TRS(pos, quaternion, Vector3.one);
-            
+
+            InfoManager infoManager = Singleton<InfoManager>.instance;
+            InfoManager.InfoMode currentMod = infoManager.CurrentMode;
+            InfoManager.SubInfoMode currentSubMod = infoManager.CurrentSubMode; ;
+            infoManager.SetCurrentMode(InfoManager.InfoMode.None, InfoManager.SubInfoMode.Default);
+
             Graphics.DrawMesh(m_mesh, matrix, material, 0, m_camera, 0, null, true, true);
             m_camera.RenderWithShader(material.shader, "");
+
+            infoManager.SetCurrentMode(currentMod, currentSubMod);
 
         }
     }

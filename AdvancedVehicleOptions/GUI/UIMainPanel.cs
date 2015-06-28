@@ -90,7 +90,6 @@ namespace AdvancedVehicleOptions.GUI
                     m_fastList.DisplayAt(m_fastList.listPosition);
                     m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
                     m_preview.parent.isVisible = true;
-                    ChangePreviewColor(m_optionsList[m_fastList.selectedIndex].color0);
                 }
             });
 
@@ -115,7 +114,7 @@ namespace AdvancedVehicleOptions.GUI
             // Title Bar
             m_title = AddUIComponent<UITitleBar>();
             m_title.iconSprite = "IconCitizenVehicle";
-            m_title.title = "Advanced Vehicle Options " + AdvancedVehicleOptions.version;
+            m_title.title = "Advanced Vehicle Options " + ModInfo.version;
 
             // Category DropDown
             UILabel label = AddUIComponent<UILabel>();

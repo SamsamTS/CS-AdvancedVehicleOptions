@@ -16,9 +16,8 @@ using ColossalFramework.UI;
 
 namespace AdvancedVehicleOptions
 {
-    public class AdvancedVehicleOptions : LoadingExtensionBase, IUserMod
+    public class ModInfo : IUserMod
     {
-        #region IUserMod implementation
         public string Name
         {
             get { return "Advanced Vehicle Options " + version; }
@@ -29,12 +28,13 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.1.2";
-        #endregion
-
+        public const string version = "1.1.3";
+    }
+    
+    public class AdvancedVehicleOptions : LoadingExtensionBase
+    {
         private static GameObject m_gameObject;
         private static VehicleOptions[] m_options;
-        private static VehicleOptions[] m_default;
         private static GUI.UIMainPanel m_mainPanel;
 
         private static List<VehicleInfo> m_removeList = new List<VehicleInfo>();
@@ -50,36 +50,57 @@ namespace AdvancedVehicleOptions
         private const string m_fileName = "AdvancedVehicleOptions.xml";
                 
         #region LoadingExtensionBase overrides
+        public override void OnCreated(ILoading loading)
+        {
+            try
+            {
+                // Storing default values ASAP (before any mods have the time to change values)
+                //new EnumerableActionThread(StoreDefault);
+                DefaultOptions.StoreAll();
+            }
+            catch(Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
         /// <summary>
         /// Called when the level (game, map editor, asset editor) is loaded
         /// </summary>
         public override void OnLevelLoaded(LoadMode mode)
         {
-            // Is it an actual game ?
-            if (mode != LoadMode.LoadGame && mode != LoadMode.NewGame)
-                return;
-
-            // Creating GUI
-            UIView view = UIView.GetAView();
-            m_gameObject = new GameObject("AdvancedVehicleOptions");
-            m_gameObject.transform.SetParent(view.transform);
-
             try
             {
-                m_mainPanel = m_gameObject.AddComponent<GUI.UIMainPanel>();
-                DebugUtils.Log("UIMainPanel created");
+                // Is it an actual game ?
+                if (mode != LoadMode.LoadGame && mode != LoadMode.NewGame)
+                {
+                    DefaultOptions.Clear();
+                    return;
+                }
+
+                // Creating GUI
+                UIView view = UIView.GetAView();
+                m_gameObject = new GameObject("AdvancedVehicleOptions");
+                m_gameObject.transform.SetParent(view.transform);
+
+                try
+                {
+                    m_mainPanel = m_gameObject.AddComponent<GUI.UIMainPanel>();
+                    DebugUtils.Log("UIMainPanel created");
+                }
+                catch
+                {
+                    DebugUtils.Warning("A new version of the mod has been installed." + Environment.NewLine +
+                        "The game must be exited completely for changes to take effect." + Environment.NewLine +
+                        "Until then the mod is disabled.");
+                    return;
+                }
+
+                new EnumerableActionThread(BrokenVehicleFix);
             }
-            catch
+            catch (Exception e)
             {
-                DebugUtils.Warning("A new version of the mod has been installed." + Environment.NewLine +
-                    "The game must be exited completely for changes to take effect." + Environment.NewLine +
-                    "Until then the mod is disabled.");
-                return;
+                Debug.LogException(e);
             }
-
-            CompileVehiclesList(true);
-
-            new EnumerableActionThread(BrokenVehicleFix);
         }
 
         /// <summary>
@@ -87,28 +108,41 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public override void OnLevelUnloading()
         {
-            base.OnLevelUnloading();
+            try
+            {
+                if (m_mainPanel == null) return;
 
-            if (m_mainPanel == null) return;
+                SaveConfig();
+                DefaultOptions.RestoreAll();
 
-            SaveConfig();
-            RestoreOptions();
-
-            DebugUtils.Log("Destroying UIMainPanel");
-            GUI.UIUtils.DestroyDeeply(m_mainPanel);
+                DebugUtils.Log("Destroying UIMainPanel");
+                GUI.UIUtils.DestroyDeeply(m_mainPanel);
+                m_mainPanel = null;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         public override void OnReleased()
         {
-            base.OnReleased();
+            try
+            {
+                if (m_mainPanel == null) return;
 
-            if (m_mainPanel == null) return;
+                SaveConfig();
+                DefaultOptions.RestoreAll();
+                DefaultOptions.Clear();
 
-            SaveConfig();
-            RestoreOptions();
-
-            DebugUtils.Log("Destroying UIMainPanel");
-            GUI.UIUtils.DestroyDeeply(m_mainPanel);
+                DebugUtils.Log("Destroying UIMainPanel");
+                GUI.UIUtils.DestroyDeeply(m_mainPanel);
+                m_mainPanel = null;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
         #endregion
 
@@ -124,7 +158,6 @@ namespace AdvancedVehicleOptions
                 DebugUtils.Log("Configuration file not found. Creating new configuration file.");
 
                 CreateConfig();
-                ApplyOptions();
 
                 // Update GUI list
                 m_mainPanel.optionList = m_options;
@@ -161,12 +194,7 @@ namespace AdvancedVehicleOptions
 
             for (uint i = 0; i < options.Length; i++)
             {
-                VehicleInfo prefab = PrefabCollection<VehicleInfo>.FindLoaded(options[i].name);
-                if (prefab != null)
-                {
-                    options[i].SetPrefab(prefab);
-                    optionsList.Add(options[i]);
-                }
+                if (options[i].prefab != null) optionsList.Add(options[i]);
             }
 
             m_options = optionsList.ToArray();
@@ -175,7 +203,6 @@ namespace AdvancedVehicleOptions
             CompileVehiclesList();
 
             // Update GUI list
-            ApplyOptions();
             m_mainPanel.optionList = m_options;
 
             DebugUtils.Log("Configuration loaded");
@@ -341,163 +368,6 @@ namespace AdvancedVehicleOptions
             m_removeParkedThreadRunning = false;
         }
 
-        #region Apply
-        public static void ApplyOptions()
-        {
-            if (m_options == null) return;
-
-            for (int i = 0; i < m_options.Length; i++)
-            {
-                ApplyOptions(m_options[i]);
-            }
-        }
-
-        public static void ApplyOptions(VehicleOptions options)
-        {
-            ApplyMaxSpeed(options);
-            ApplyAcceleration(options);
-            ApplyColors(options);
-            ApplySpawning(options);
-            ApplyBackEngine(options);
-            ApplyCapacity(options);
-        }
-
-        public static void ApplyMaxSpeed(VehicleOptions options)
-        {
-            //if (!IsAICustom(options.prefab.m_vehicleAI))
-                options.prefab.m_maxSpeed = options.maxSpeed;
-            //else
-                //DebugUtils.Log("Max Speed not applied: custom Vehicle AI detected");
-        }
-
-        public static void ApplyAcceleration(VehicleOptions options)
-        {
-            options.prefab.m_acceleration= options.acceleration;
-        }
-
-        public static void ApplyColors(VehicleOptions options)
-        {
-            options.prefab.m_color0 = options.color0;
-            options.prefab.m_color1 = options.color1;
-            options.prefab.m_color2 = options.color2;
-            options.prefab.m_color3 = options.color3;
-        }
-        
-        public static void ApplySpawning(VehicleOptions options)
-        {
-            options.prefab.m_placementStyle = options.enabled ? options.placementStyle : ItemClass.Placement.Manual;
-
-            // Make transfer vehicle dirty
-            m_transferVehiclesDirty.SetValue(Singleton<VehicleManager>.instance, true);
-        }
-
-        public static void ApplyBackEngine(VehicleOptions options)
-        {
-            // Is it a train?
-            if (!options.hasTrailer || options.prefab.m_vehicleType != VehicleInfo.VehicleType.Train) return;
-
-            VehicleInfo newTrailer = options.addBackEngine ? options.prefab : options.prefab.m_trailers[0].m_info;
-            int last = options.prefab.m_trailers.Length - 1;
-
-            if (options.prefab.m_trailers[last].m_info == newTrailer) return;
-
-            options.prefab.m_trailers[last].m_info = newTrailer;
-
-            if (options.addBackEngine)
-                options.prefab.m_trailers[last].m_invertProbability = options.prefab.m_trailers[last].m_probability;
-            else
-                options.prefab.m_trailers[last].m_invertProbability = options.prefab.m_trailers[0].m_invertProbability;
-            
-            // TODO Apply on existing trains
-            //EnumerableActionThread thread = new EnumerableActionThread(ActionAddBackEngine);
-        }
-
-        public static void ApplyCapacity(VehicleOptions options)
-        {
-            if (!options.hasCapacity) return;
-
-            VehicleAI ai;
-
-            ai = options.prefab.m_vehicleAI as AmbulanceAI;
-            if (ai != null) ((AmbulanceAI)ai).m_patientCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as BusAI;
-            if (ai != null) ((BusAI)ai).m_passengerCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as CargoShipAI;
-            if (ai != null) ((CargoShipAI)ai).m_cargoCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as CargoTrainAI;
-            if (ai != null) ((CargoTrainAI)ai).m_cargoCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as CargoTruckAI;
-            if (ai != null) ((CargoTruckAI)ai).m_cargoCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as GarbageTruckAI;
-            if (ai != null) ((GarbageTruckAI)ai).m_cargoCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as FireTruckAI;
-            if (ai != null) ((FireTruckAI)ai).m_fireFightingRate = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as HearseAI;
-            if (ai != null) ((HearseAI)ai).m_corpseCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as PassengerPlaneAI;
-            if (ai != null) ((PassengerPlaneAI)ai).m_passengerCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as PassengerShipAI;
-            if (ai != null) ((PassengerShipAI)ai).m_passengerCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as PassengerTrainAI;
-            if (ai != null) ((PassengerTrainAI)ai).m_passengerCapacity = options.capacity;
-
-            ai = options.prefab.m_vehicleAI as PoliceCarAI;
-            if (ai != null) ((PoliceCarAI)ai).m_crimeCapacity = options.capacity;
-        }
-
-        public static void RestoreDefault(VehicleOptions options)
-        {
-            for (int i = 0; i < m_default.Length; i++)
-            {
-                if (options.prefab == m_default[i].prefab)
-                {
-                    ApplyOptions(m_default[i]);
-
-                    options.acceleration = -1f;
-                    options.capacity = -1;
-
-                    options.SetPrefab(m_default[i].prefab);
-
-                    options.name = m_default[i].prefab.name;
-                    options.maxSpeed = m_default[i].prefab.m_maxSpeed;
-
-                    options.color0 = m_default[i].prefab.m_color0;
-                    options.color1 = m_default[i].prefab.m_color1;
-                    options.color2 = m_default[i].prefab.m_color2;
-                    options.color3 = m_default[i].prefab.m_color3;
-
-                    options.enabled = true;
-                    options.addBackEngine = false;
-
-                    if (m_default[i].prefab.m_vehicleType == VehicleInfo.VehicleType.Train && options.hasTrailer)
-                    {
-                        options.addBackEngine = m_default[i].prefab.m_trailers[m_default[i].prefab.m_trailers.Length - 1].m_info == m_default[i].prefab;
-                    }
-
-                    return;
-                }
-            }
-        }
-
-        public static void RestoreOptions()
-        {
-            m_options = m_default;
-            ApplyOptions();
-            m_default = null;
-        }
-
-        #endregion
-
         private static void CreateConfig()
         {
             CompileVehiclesList();
@@ -536,7 +406,7 @@ namespace AdvancedVehicleOptions
         /// <summary>
         /// Check if new there are vehicles and add them to the options list
         /// </summary>
-        private static void CompileVehiclesList(bool savedefault = false)
+        private static void CompileVehiclesList()
         {
             List<VehicleOptions> optionsList = new List<VehicleOptions>();
             if(m_options != null) optionsList.AddRange(m_options);
@@ -568,12 +438,6 @@ namespace AdvancedVehicleOptions
                 }
 
                 optionsList.Add(options);
-            }
-
-            if(savedefault)
-            {
-                m_default = optionsList.ToArray();
-                return;
             }
 
             if(m_options != null)

@@ -5,7 +5,7 @@ namespace AdvancedVehicleOptions
 {
     public class DebugUtils
     {
-        public const string modPrefix = "[Advanced Vehicle Options "+AdvancedVehicleOptions.version+"] ";
+        public const string modPrefix = "[Advanced Vehicle Options "+ModInfo.version+"] ";
 
         public static void Message(string message)
         {
