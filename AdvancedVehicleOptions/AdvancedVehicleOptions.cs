@@ -28,7 +28,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.1.3";
+        public const string version = "1.2";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -55,8 +55,14 @@ namespace AdvancedVehicleOptions
             try
             {
                 // Storing default values ASAP (before any mods have the time to change values)
-                //new EnumerableActionThread(StoreDefault);
                 DefaultOptions.StoreAll();
+
+                // Creating a backup
+                if (File.Exists(m_fileName))
+                {
+                    File.Copy(m_fileName, m_fileName + ".bak", true);
+                    DebugUtils.Log("Backup configuration file created");
+                }
             }
             catch(Exception e)
             {
@@ -108,36 +114,19 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public override void OnLevelUnloading()
         {
-            try
-            {
-                if (m_mainPanel == null) return;
-
-                SaveConfig();
-                DefaultOptions.RestoreAll();
-
-                DebugUtils.Log("Destroying UIMainPanel");
-                GUI.UIUtils.DestroyDeeply(m_mainPanel);
-                m_mainPanel = null;
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
+            SaveConfig();
         }
 
         public override void OnReleased()
         {
             try
             {
-                if (m_mainPanel == null) return;
-
-                SaveConfig();
+                m_options = null;
+                DebugUtils.Log("Restoring default values");
                 DefaultOptions.RestoreAll();
-                DefaultOptions.Clear();
 
-                DebugUtils.Log("Destroying UIMainPanel");
                 GUI.UIUtils.DestroyDeeply(m_mainPanel);
-                m_mainPanel = null;
+                GameObject.Destroy(m_gameObject);
             }
             catch (Exception e)
             {
@@ -164,15 +153,15 @@ namespace AdvancedVehicleOptions
                 return;
             }
 
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(VehicleOptions[]));
-            VehicleOptions[] options = null;
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(OptionsList));
+            OptionsList options = null;
 
             try
             {
                 // Trying to Deserialize the configuration file
                 using (FileStream stream = new FileStream(m_fileName, FileMode.Open))
                 {
-                    options = xmlSerializer.Deserialize(stream) as VehicleOptions[];
+                    options = xmlSerializer.Deserialize(stream) as OptionsList;
                 }
             }
             catch (Exception e)
@@ -180,6 +169,7 @@ namespace AdvancedVehicleOptions
                 // Couldn't Deserialize (XML malformed?)
                 DebugUtils.Warning("Couldn't load configuration (XML malformed?)");
                 Debug.LogException(e);
+
                 return;
             }
 
@@ -192,12 +182,14 @@ namespace AdvancedVehicleOptions
             // Remove unneeded options
             List<VehicleOptions> optionsList = new List<VehicleOptions>();
 
-            for (uint i = 0; i < options.Length; i++)
+            for (uint i = 0; i < options.items.Length; i++)
             {
-                if (options[i].prefab != null) optionsList.Add(options[i]);
+                if (options.items[i].prefab != null) optionsList.Add(options.items[i]);
             }
 
             m_options = optionsList.ToArray();
+            new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
+            new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
 
             // Checking for new vehicles
             CompileVehiclesList();
@@ -221,8 +213,8 @@ namespace AdvancedVehicleOptions
                 using (FileStream stream = new FileStream(m_fileName, FileMode.OpenOrCreate))
                 {
                     stream.SetLength(0); // Emptying the file !!!
-                    XmlSerializer xmlSerializer = new XmlSerializer(typeof(VehicleOptions[]));
-                    xmlSerializer.Serialize(stream, m_options);
+                    XmlSerializer xmlSerializer = new XmlSerializer(typeof(OptionsList));
+                    xmlSerializer.Serialize(stream, new OptionsList() { version = ModInfo.version, items = m_options });
                     DebugUtils.Log("Configuration saved");
                 }
             }

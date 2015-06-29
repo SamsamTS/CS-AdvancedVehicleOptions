@@ -107,6 +107,14 @@ namespace AdvancedVehicleOptions.GUI
             UIUtils.DestroyDeeply(m_optionPanel);
         }
 
+        /*protected override void OnVisibilityChanged()
+        {
+            if (m_button != null && !isVisible)
+            {
+                AdvancedVehicleOptions.SaveConfig();
+            }
+        }*/
+
         private void SetupControls()
         {
             float offset = 40f;

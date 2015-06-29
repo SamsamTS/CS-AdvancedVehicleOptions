@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ColossalFramework.UI;
+using ColossalFramework.Threading;
 
 namespace AdvancedVehicleOptions.GUI
 {
@@ -7,6 +8,7 @@ namespace AdvancedVehicleOptions.GUI
     {
         private UITextField m_maxSpeed;
         private UITextField m_acceleration;
+        private UITextField m_braking;
         private UIColorField m_color0;
         private UIColorField m_color1;
         private UIColorField m_color2;
@@ -52,6 +54,7 @@ namespace AdvancedVehicleOptions.GUI
 
             m_maxSpeed.text = Mathf.RoundToInt(options.maxSpeed * 5).ToString();
             m_acceleration.text = options.acceleration.ToString();
+            m_braking.text = options.braking.ToString();
             m_color0.selectedColor = options.color0;
             m_color1.selectedColor = options.color1;
             m_color2.selectedColor = options.color2;
@@ -105,15 +108,22 @@ namespace AdvancedVehicleOptions.GUI
 
             // Acceleration
             UILabel accelerationLabel = panel.AddUIComponent<UILabel>();
-            accelerationLabel.text = "Acceleration:";
+            accelerationLabel.text = "Acceleration/Brake:";
             accelerationLabel.textScale = 0.9f;
             accelerationLabel.relativePosition = new Vector3(160, 15);
 
             m_acceleration = UIUtils.CreateTextField(panel);
             m_acceleration.numericalOnly = true;
             m_acceleration.allowFloats = true;
-            m_acceleration.width = 75;
+            m_acceleration.width = 60;
             m_acceleration.relativePosition = new Vector3(160, 35);
+
+            // Braking
+            m_braking = UIUtils.CreateTextField(panel);
+            m_braking.numericalOnly = true;
+            m_braking.allowFloats = true;
+            m_braking.width = 60;
+            m_braking.relativePosition = new Vector3(230, 35);
 
             // Colors
             UILabel colorsLabel = panel.AddUIComponent<UILabel>();
@@ -206,6 +216,7 @@ namespace AdvancedVehicleOptions.GUI
             // Event handlers
             m_maxSpeed.eventTextSubmitted += OnMaxSpeedSubmitted;
             m_acceleration.eventTextSubmitted += OnAccelerationSubmitted;
+            m_braking.eventTextSubmitted += OnBrakingSubmitted;
 
             MouseEventHandler mousehandler = (c, p) => { if (m_initialized) (parent as UIMainPanel).ChangePreviewColor((c as UIColorField).selectedColor); };
 
@@ -239,6 +250,7 @@ namespace AdvancedVehicleOptions.GUI
                 m_initialized = false;
                 bool isEnabled = m_options.enabled;
                 DefaultOptions.Restore(m_options.prefab);
+                new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
                 Show(m_options);
 
                 if (m_options.enabled != isEnabled)
@@ -262,6 +274,7 @@ namespace AdvancedVehicleOptions.GUI
             else
             {
                 m_options.addBackEngine = m_addBackEngine.isChecked;
+                new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
             }
             m_initialized = true;
         }
@@ -272,6 +285,7 @@ namespace AdvancedVehicleOptions.GUI
             m_initialized = false;
 
             m_options.maxSpeed = float.Parse(text) / 5f;
+            m_initialized = true;
         }
 
         protected void OnAccelerationSubmitted(UIComponent component, string text)
@@ -280,6 +294,16 @@ namespace AdvancedVehicleOptions.GUI
             m_initialized = false;
 
             m_options.acceleration = float.Parse(text);
+            m_initialized = true;
+        }
+
+        protected void OnBrakingSubmitted(UIComponent component, string text)
+        {
+            if (!m_initialized || m_options == null) return;
+            m_initialized = false;
+
+            m_options.braking = float.Parse(text);
+            m_initialized = true;
         }
 
         protected void OnCapacitySubmitted(UIComponent component, string text)
@@ -288,6 +312,8 @@ namespace AdvancedVehicleOptions.GUI
             m_initialized = false;
 
             m_options.capacity = int.Parse(text);
+            new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
+            m_initialized = true;
         }
 
         protected void OnColorChanged(UIComponent component, Color color)
@@ -323,13 +349,14 @@ namespace AdvancedVehicleOptions.GUI
                 m_color2_hex.text = m_options.color2.ToString();
                 m_color3_hex.text = m_options.color3.ToString();
 
+                m_initialized = true;
                 return;
             }
 
             m_options.color0 = new HexaColor(m_color0_hex.text);
-            m_options.color1 = new HexaColor(m_color0_hex.text);
-            m_options.color2 = new HexaColor(m_color0_hex.text);
-            m_options.color3 = new HexaColor(m_color0_hex.text);
+            m_options.color1 = new HexaColor(m_color1_hex.text);
+            m_options.color2 = new HexaColor(m_color2_hex.text);
+            m_options.color3 = new HexaColor(m_color3_hex.text);
 
             m_color0_hex.text = m_options.color0.ToString();
             m_color1_hex.text = m_options.color1.ToString();
@@ -341,6 +368,7 @@ namespace AdvancedVehicleOptions.GUI
             m_color2.selectedColor = m_options.color2;
             m_color3.selectedColor = m_options.color3;
 
+            (parent as UIMainPanel).ChangePreviewColor(color);
             m_initialized = true;
         }
 
