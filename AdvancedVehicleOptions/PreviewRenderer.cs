@@ -112,5 +112,15 @@ namespace AdvancedVehicleOptions
             infoManager.SetCurrentMode(currentMod, currentSubMod);
 
         }
+
+        public void Render(Color color)
+        {
+            if (material == null) return;
+
+            Color tmp = material.color;
+            material.color = color;
+            Render();
+            material.color = tmp;
+        }
     }
 }

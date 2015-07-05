@@ -9,6 +9,7 @@ namespace AdvancedVehicleOptions.GUI
         private UITextField m_maxSpeed;
         private UITextField m_acceleration;
         private UITextField m_braking;
+        private UICheckBox m_useColors;
         private UIColorField m_color0;
         private UIColorField m_color1;
         private UIColorField m_color2;
@@ -25,7 +26,7 @@ namespace AdvancedVehicleOptions.GUI
         private UIButton m_clearVehicles;
         private UIButton m_clearParked;
 
-        private VehicleOptions m_options = null;
+        public VehicleOptions m_options = null;
 
         private bool m_initialized = false;
 
@@ -55,6 +56,7 @@ namespace AdvancedVehicleOptions.GUI
             m_maxSpeed.text = Mathf.RoundToInt(options.maxSpeed * 5).ToString();
             m_acceleration.text = options.acceleration.ToString();
             m_braking.text = options.braking.ToString();
+            m_useColors.isChecked = options.useColorVariations;
             m_color0.selectedColor = options.color0;
             m_color1.selectedColor = options.color1;
             m_color2.selectedColor = options.color2;
@@ -92,7 +94,7 @@ namespace AdvancedVehicleOptions.GUI
 
             // Max Speed
             UILabel maxSpeedLabel = panel.AddUIComponent<UILabel>();
-            maxSpeedLabel.text = "Maximum Speed:";
+            maxSpeedLabel.text = "Maximum speed:";
             maxSpeedLabel.textScale = 0.9f;
             maxSpeedLabel.relativePosition = new Vector3(15, 15);
 
@@ -126,47 +128,46 @@ namespace AdvancedVehicleOptions.GUI
             m_braking.relativePosition = new Vector3(230, 35);
 
             // Colors
-            UILabel colorsLabel = panel.AddUIComponent<UILabel>();
-            colorsLabel.text = "Colors:";
-            colorsLabel.textScale = 0.9f;
-            colorsLabel.relativePosition = new Vector3(15, 70);
-
-            gameObject.AddComponent<UICustomControl>();
+            m_useColors = UIUtils.CreateCheckBox(panel);
+            m_useColors.text = "Color variations:";
+            m_useColors.isChecked = true;
+            m_useColors.width = width - 40;
+            m_useColors.relativePosition = new Vector3(15, 70);
 
             m_color0 = UIUtils.CreateColorField(panel);
             m_color0.name = "AVO-color0";
-            m_color0.relativePosition = new Vector3(13 , 90 - 2);
+            m_color0.relativePosition = new Vector3(13 , 95 - 2);
             m_color0_hex = UIUtils.CreateTextField(panel);
             m_color0_hex.maxLength = 6;
-            m_color0_hex.relativePosition = new Vector3(55, 90);
+            m_color0_hex.relativePosition = new Vector3(55, 95);
 
             m_color1 = UIUtils.CreateColorField(panel);
             m_color1.name = "AVO-color1";
-            m_color1.relativePosition = new Vector3(13, 115 - 2);
+            m_color1.relativePosition = new Vector3(13, 120 - 2);
             m_color1_hex = UIUtils.CreateTextField(panel);
             m_color1_hex.maxLength = 6;
-            m_color1_hex.relativePosition = new Vector3(55, 115);
+            m_color1_hex.relativePosition = new Vector3(55, 120);
 
             m_color2 = UIUtils.CreateColorField(panel);
             m_color2.name = "AVO-color2";
-            m_color2.relativePosition = new Vector3(158, 90 - 2);
+            m_color2.relativePosition = new Vector3(158, 95 - 2);
             m_color2_hex = UIUtils.CreateTextField(panel);
             m_color2_hex.maxLength = 6;
-            m_color2_hex.relativePosition = new Vector3(200, 90);
+            m_color2_hex.relativePosition = new Vector3(200, 95);
 
             m_color3 = UIUtils.CreateColorField(panel);
             m_color3.name = "AVO-color3";
-            m_color3.relativePosition = new Vector3(158, 115 - 2);
+            m_color3.relativePosition = new Vector3(158, 120 - 2);
             m_color3_hex = UIUtils.CreateTextField(panel);
             m_color3_hex.maxLength = 6;
-            m_color3_hex.relativePosition = new Vector3(200, 115);
+            m_color3_hex.relativePosition = new Vector3(200, 120);
 
             // Enable & BackEngine
             m_enabled = UIUtils.CreateCheckBox(panel);
             m_enabled.text = "Allow this vehicle to spawn";
             m_enabled.isChecked = true;
             m_enabled.width = width - 40;
-            m_enabled.relativePosition = new Vector3(15, 150); ;
+            m_enabled.relativePosition = new Vector3(15, 155); ;
 
             m_addBackEngine = UIUtils.CreateCheckBox(panel);
             m_addBackEngine.text = "Replace last car with engine";
@@ -217,6 +218,8 @@ namespace AdvancedVehicleOptions.GUI
             m_maxSpeed.eventTextSubmitted += OnMaxSpeedSubmitted;
             m_acceleration.eventTextSubmitted += OnAccelerationSubmitted;
             m_braking.eventTextSubmitted += OnBrakingSubmitted;
+
+            m_useColors.eventCheckChanged += OnCheckChanged;
 
             MouseEventHandler mousehandler = (c, p) => { if (m_initialized) (parent as UIMainPanel).ChangePreviewColor((c as UIColorField).selectedColor); };
 
@@ -271,10 +274,15 @@ namespace AdvancedVehicleOptions.GUI
                 m_options.enabled = state;
                 eventEnableCheckChanged(this, state);
             }
-            else
+            else if (component == m_addBackEngine && m_options.addBackEngine != state)
             {
                 m_options.addBackEngine = m_addBackEngine.isChecked;
                 new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
+            }
+            else if (component == m_useColors && m_options.useColorVariations != state)
+            {
+                m_options.useColorVariations = state;
+                (parent as UIMainPanel).ChangePreviewColor(m_color0.selectedColor);
             }
             m_initialized = true;
         }

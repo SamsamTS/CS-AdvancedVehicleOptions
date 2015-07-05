@@ -28,7 +28,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.2";
+        public const string version = "1.2.3";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -114,19 +114,26 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public override void OnLevelUnloading()
         {
-            SaveConfig();
+            try
+            {
+                SaveConfig();
+                m_options = null;
+
+                GUI.UIUtils.DestroyDeeply(m_mainPanel);
+                GameObject.Destroy(m_gameObject);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         public override void OnReleased()
         {
             try
             {
-                m_options = null;
                 DebugUtils.Log("Restoring default values");
                 DefaultOptions.RestoreAll();
-
-                GUI.UIUtils.DestroyDeeply(m_mainPanel);
-                GameObject.Destroy(m_gameObject);
             }
             catch (Exception e)
             {
@@ -140,7 +147,11 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public static void LoadConfig(UIComponent source)
         {
-            m_options = null; // Clear all options
+            // Clear all options
+            m_options = null; 
+
+            // Store modded values
+            DefaultOptions.StoreAllModded();
 
             if (!File.Exists(m_fileName))
             {
@@ -170,29 +181,35 @@ namespace AdvancedVehicleOptions
                 DebugUtils.Warning("Couldn't load configuration (XML malformed?)");
                 Debug.LogException(e);
 
-                return;
+                options = null;
             }
 
-            if (options == null)
+            if (options == null || options.items == null)
             {
-                DebugUtils.Warning("Couldn't load configuration (vehicle list is null)");
-                return;
+                DebugUtils.Warning("Couldn't load configuration (vehicle list is null). Default values will be used.");
             }
-            
-            // Remove unneeded options
-            List<VehicleOptions> optionsList = new List<VehicleOptions>();
-
-            for (uint i = 0; i < options.items.Length; i++)
+            else
             {
-                if (options.items[i].prefab != null) optionsList.Add(options.items[i]);
-            }
+                // Remove unneeded options
+                List<VehicleOptions> optionsList = new List<VehicleOptions>();
 
-            m_options = optionsList.ToArray();
-            new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
-            new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
+                for (uint i = 0; i < options.items.Length; i++)
+                {
+                    if (options.items[i] != null && options.items[i].prefab != null) optionsList.Add(options.items[i]);
+                }
+
+                m_options = optionsList.ToArray();
+
+                // Update existing vehicles
+                new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
+                new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
+            }
 
             // Checking for new vehicles
             CompileVehiclesList();
+
+            // Checking for conflicts
+            DefaultOptions.CheckForConflicts();
 
             // Update GUI list
             m_mainPanel.optionList = m_options;
@@ -396,7 +413,7 @@ namespace AdvancedVehicleOptions
         }
 
         /// <summary>
-        /// Check if new there are vehicles and add them to the options list
+        /// Check if there are new vehicles and add them to the options list
         /// </summary>
         private static void CompileVehiclesList()
         {
@@ -412,22 +429,6 @@ namespace AdvancedVehicleOptions
                 // New vehicle
                 VehicleOptions options = new VehicleOptions();
                 options.SetPrefab(prefab);
-
-                options.name = prefab.name;
-                options.maxSpeed = prefab.m_maxSpeed;
-
-                options.color0 = prefab.m_color0;
-                options.color1 = prefab.m_color1;
-                options.color2 = prefab.m_color2;
-                options.color3 = prefab.m_color3;
-
-                options.enabled = true;
-                options.addBackEngine = false;
-
-                if (prefab.m_vehicleType == VehicleInfo.VehicleType.Train && options.hasTrailer)
-                {
-                    options.addBackEngine = prefab.m_trailers[prefab.m_trailers.Length - 1].m_info == prefab;
-                }
 
                 optionsList.Add(options);
             }
@@ -457,7 +458,7 @@ namespace AdvancedVehicleOptions
 
             for (int i = 0; i < m_options.Length; i++)
             {
-                if (m_options[i].name.Contains("."))
+                if (m_options[i] != null && m_options[i].name.Contains("."))
                 {
                     steamIDs.Append(m_options[i].name.Substring(0, m_options[i].name.IndexOf(".")));
                     steamIDs.Append(",");

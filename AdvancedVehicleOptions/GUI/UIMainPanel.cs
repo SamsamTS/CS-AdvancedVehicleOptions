@@ -20,6 +20,7 @@ namespace AdvancedVehicleOptions.GUI
 
         private VehicleOptions[] m_optionsList;
         private PreviewRenderer m_previewRenderer;
+        private Color m_previewColor;
 
         private const int HEIGHT = 550;
         private const int WIDTHLEFT = 470;
@@ -106,14 +107,6 @@ namespace AdvancedVehicleOptions.GUI
             Destroy(m_button);
             UIUtils.DestroyDeeply(m_optionPanel);
         }
-
-        /*protected override void OnVisibilityChanged()
-        {
-            if (m_button != null && !isVisible)
-            {
-                AdvancedVehicleOptions.SaveConfig();
-            }
-        }*/
 
         private void SetupControls()
         {
@@ -213,26 +206,39 @@ namespace AdvancedVehicleOptions.GUI
             panel.eventMouseDown += (c, p) =>
             {
                 eventMouseMove += RotateCamera;
-                m_previewRenderer.Render();
+                if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations)
+                    m_previewRenderer.Render(m_previewColor);
+                else
+                    m_previewRenderer.Render();
+
             };
 
             panel.eventMouseUp += (c, p) =>
             {
                 eventMouseMove -= RotateCamera;
-                m_previewRenderer.Render();
+                if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations)
+                    m_previewRenderer.Render(m_previewColor);
+                else
+                    m_previewRenderer.Render();
             };
 
             panel.eventMouseWheel += (c, p) =>
             {
                 m_previewRenderer.zoom -= Mathf.Sign(p.wheelDelta) * 0.25f;
-                m_previewRenderer.Render();
+                if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations)
+                    m_previewRenderer.Render(m_previewColor);
+                else
+                    m_previewRenderer.Render();
             };
         }
 
         private void RotateCamera(UIComponent c, UIMouseEventParameter p)
         {
             m_previewRenderer.cameraRotation -= p.moveDelta.x / m_preview.width * 360f;
-            m_previewRenderer.Render();
+            if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations)
+                m_previewRenderer.Render(m_previewColor);
+            else
+                m_previewRenderer.Render();
         }
 
         private void PopulateList()
@@ -267,12 +273,14 @@ namespace AdvancedVehicleOptions.GUI
 
             m_previewRenderer.mesh = options.prefab.m_mesh;
             m_previewRenderer.material = options.prefab.m_material;
-            Color color = options.color0;
-            color.a = 0; // Fixes the wrong lighting on one half of the vehicle
-            m_previewRenderer.material.color = color;
+            m_previewColor = options.color0;
+            m_previewColor.a = 0; // Fixes the wrong lighting on one half of the vehicle
             m_previewRenderer.cameraRotation = 120f;
             m_previewRenderer.zoom = 3f;
-            m_previewRenderer.Render();
+            if (options.useColorVariations)
+                m_previewRenderer.Render(m_previewColor);
+            else
+                m_previewRenderer.Render();
         }
 
         protected void OnEnableStateChanged(UIComponent component, bool state)
@@ -282,12 +290,15 @@ namespace AdvancedVehicleOptions.GUI
 
         public void ChangePreviewColor(Color color)
         {
-            if (m_previewRenderer.material != null && m_previewRenderer.material.color != color)
+            if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations &&
+                m_previewRenderer.material != null && m_previewColor != color)
             {
-                color.a = 0; // Fixes the wrong lighting on one half of the vehicle
-                m_previewRenderer.material.color = color;
-                m_previewRenderer.Render();
+                m_previewColor = color;
+                m_previewColor.a = 0; // Fixes the wrong lighting on one half of the vehicle
+                m_previewRenderer.Render(m_previewColor);
             }
+            else
+                m_previewRenderer.Render();
         }
     }
 

@@ -75,7 +75,7 @@ namespace AdvancedVehicleOptions
             }
             set
             {
-                if (m_prefab == null || !hasTrailer) return;
+                if (m_prefab == null || !hasTrailer || m_prefab.m_vehicleType != VehicleInfo.VehicleType.Train) return;
 
                 VehicleInfo newTrailer = value ? m_prefab : m_prefab.m_trailers[0].m_info;
                 int last = m_prefab.m_trailers.Length - 1;
@@ -118,6 +118,16 @@ namespace AdvancedVehicleOptions
             {
                 if (m_prefab == null) return;
                 m_prefab.m_braking = value;
+            }
+        }
+        // useColorVariations
+        public bool useColorVariations
+        {
+            get { return m_prefab.m_useColorVariations; }
+            set
+            {
+                if (m_prefab == null) return;
+                m_prefab.m_useColorVariations = value;
             }
         }
         // colors
@@ -353,10 +363,9 @@ namespace AdvancedVehicleOptions
             for (int i = 0; i < vehicles.m_size; i++)
             {
                 VehicleInfo info = vehicles.m_buffer[i].Info;
-                if(vehicles.m_buffer[i].m_leadingVehicle == 0 && info.m_trailers != null && info.m_trailers.Length > 0)
+                if (vehicles.m_buffer[i].m_leadingVehicle == 0 && info.m_trailers != null && info.m_trailers.Length > 0)
                 {
                     ushort last = vehicles.m_buffer[i].GetLastVehicle((ushort)i);
-                    DebugUtils.Log("size: " + vehicles.m_size + " last: " + last);
                     vehicles.m_buffer[last].Info = info.m_trailers[info.m_trailers.Length - 1].m_info;
                 }
                 if (i % 256 == 255) yield return null;
@@ -603,7 +612,8 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        private static Dictionary<VehicleInfo, DefaultOptions> m_default = new Dictionary<VehicleInfo,DefaultOptions>();
+        private static Dictionary<VehicleInfo, DefaultOptions> m_default = new Dictionary<VehicleInfo, DefaultOptions>();
+        private static Dictionary<VehicleInfo, DefaultOptions> m_modded = new Dictionary<VehicleInfo, DefaultOptions>();
 
         public static ItemClass.Placement GetPlacementStyle(VehicleInfo prefab)
         {
@@ -625,6 +635,75 @@ namespace AdvancedVehicleOptions
             new GameObject("AVO-StoreDefault").AddComponent<StoreDefault>();
         }
 
+        public static void StoreAllModded()
+        {
+            if (m_modded.Count > 0) return;
+
+            for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
+            {
+                VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
+
+                if (prefab != null && !m_modded.ContainsKey(prefab))
+                    m_modded.Add(prefab, new DefaultOptions(prefab));
+            }
+        }
+
+        public static void CheckForConflicts()
+        {
+            StringBuilder conflicts = new StringBuilder();
+
+            foreach (VehicleInfo prefab in m_default.Keys)
+            {
+                    VehicleOptions options = new VehicleOptions();
+                    options.SetPrefab(prefab);
+
+                    DefaultOptions modded = m_modded[prefab];
+                    DefaultOptions stored = m_default[prefab];
+
+                    StringBuilder details = new StringBuilder();
+
+                    if (modded.m_enabled != stored.m_enabled && options.enabled == stored.m_enabled)
+                    {
+                        options.enabled = modded.m_enabled;
+                        details.Append("enabled, ");
+                    }
+                    if (modded.m_addBackEngine != stored.m_addBackEngine && options.addBackEngine == stored.m_addBackEngine)
+                    {
+                        options.addBackEngine = modded.m_addBackEngine;
+                        details.Append("back engine, ");
+                    }
+                    if (modded.m_maxSpeed != stored.m_maxSpeed && options.maxSpeed == stored.m_maxSpeed)
+                    {
+                        options.maxSpeed = modded.m_maxSpeed;
+                        details.Append("max speed, ");
+                    }
+                    if (modded.m_acceleration != stored.m_acceleration && options.acceleration == stored.m_acceleration)
+                    {
+                        options.acceleration = modded.m_acceleration;
+                        details.Append("acceleration, ");
+                    }
+                    if (modded.m_braking != stored.m_braking && options.braking == stored.m_braking)
+                    {
+                        options.braking = modded.m_braking;
+                        details.Append("braking, ");
+                    }
+                    if (modded.m_capacity != stored.m_capacity && options.capacity == stored.m_capacity)
+                    {
+                        options.capacity = modded.m_capacity;
+                        details.Append("capacity, ");
+                    }
+
+                    if (details.Length > 0)
+                    {
+                        details.Length -= 2;
+                        conflicts.AppendLine(options.name + ": " + details);
+                    }
+            }
+
+            if (conflicts.Length > 0)
+                DebugUtils.Log("Conflicts detected (this message is harmless):" + Environment.NewLine + conflicts);
+        }
+
         public static void Restore(VehicleInfo prefab)
         {
             if (prefab == null) return;
@@ -640,13 +719,13 @@ namespace AdvancedVehicleOptions
             options.maxSpeed = stored.m_maxSpeed;
             options.acceleration = stored.m_acceleration;
             options.braking = stored.m_braking;
+            options.useColorVariations = stored.m_useColorVariations;
             options.color0 = stored.m_color0;
             options.color1 = stored.m_color1;
             options.color2 = stored.m_color2;
             options.color3 = stored.m_color3;
             options.capacity = stored.m_capacity;
             prefab.m_placementStyle = stored.m_placementStyle;
-            prefab.m_useColorVariations = stored.m_useColorVariations;
         }
 
         public static void RestoreAll()
@@ -672,15 +751,13 @@ namespace AdvancedVehicleOptions
             m_maxSpeed = options.maxSpeed;
             m_acceleration = options.acceleration;
             m_braking = options.braking;
+            m_useColorVariations = options.useColorVariations;
             m_color0 = options.color0;
             m_color1 = options.color1;
             m_color2 = options.color2;
             m_color3 = options.color3;
             m_capacity = options.capacity;
             m_placementStyle = options.placementStyle;
-            m_useColorVariations = prefab.m_useColorVariations;
-            // Enable color variations on all vehicles
-            prefab.m_useColorVariations = true;
         }
 
         private bool m_enabled;
@@ -688,12 +765,12 @@ namespace AdvancedVehicleOptions
         private float m_maxSpeed;
         private float m_acceleration;
         private float m_braking;
+        private bool m_useColorVariations;
         private HexaColor m_color0;
         private HexaColor m_color1;
         private HexaColor m_color2;
         private HexaColor m_color3;
         private int m_capacity;
         private ItemClass.Placement m_placementStyle;
-        private bool m_useColorVariations;
     }
 }
