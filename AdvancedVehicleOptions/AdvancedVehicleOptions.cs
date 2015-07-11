@@ -28,7 +28,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.2.3";
+        public const string version = "1.2.6";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -134,6 +134,7 @@ namespace AdvancedVehicleOptions
             {
                 DebugUtils.Log("Restoring default values");
                 DefaultOptions.RestoreAll();
+                DefaultOptions.Clear();
             }
             catch (Exception e)
             {
@@ -199,10 +200,6 @@ namespace AdvancedVehicleOptions
                 }
 
                 m_options = optionsList.ToArray();
-
-                // Update existing vehicles
-                new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
-                new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
             }
 
             // Checking for new vehicles
@@ -210,6 +207,10 @@ namespace AdvancedVehicleOptions
 
             // Checking for conflicts
             DefaultOptions.CheckForConflicts();
+
+            // Update existing vehicles
+            new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
+            new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
 
             // Update GUI list
             m_mainPanel.optionList = m_options;

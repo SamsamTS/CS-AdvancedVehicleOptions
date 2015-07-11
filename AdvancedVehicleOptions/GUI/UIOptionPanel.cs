@@ -253,7 +253,12 @@ namespace AdvancedVehicleOptions.GUI
                 m_initialized = false;
                 bool isEnabled = m_options.enabled;
                 DefaultOptions.Restore(m_options.prefab);
+
+                VehicleOptions.prefabUpdateEngine = m_options.prefab;
+                VehicleOptions.prefabUpdateUnits = m_options.prefab;
+                new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
                 new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
+
                 Show(m_options);
 
                 if (m_options.enabled != isEnabled)
@@ -277,6 +282,7 @@ namespace AdvancedVehicleOptions.GUI
             else if (component == m_addBackEngine && m_options.addBackEngine != state)
             {
                 m_options.addBackEngine = m_addBackEngine.isChecked;
+                VehicleOptions.prefabUpdateEngine = m_options.prefab;
                 new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
             }
             else if (component == m_useColors && m_options.useColorVariations != state)
@@ -320,6 +326,7 @@ namespace AdvancedVehicleOptions.GUI
             m_initialized = false;
 
             m_options.capacity = int.Parse(text);
+            VehicleOptions.prefabUpdateUnits = m_options.prefab;
             new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
             m_initialized = true;
         }

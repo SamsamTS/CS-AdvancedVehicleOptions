@@ -43,7 +43,14 @@ namespace AdvancedVehicleOptions
         public string name
         {
             get { return m_prefab.name; }
-            set { SetPrefab(PrefabCollection<VehicleInfo>.FindLoaded(value)); }
+            set
+            {
+                VehicleInfo prefab = PrefabCollection<VehicleInfo>.FindLoaded(value);
+                if (prefab == null)
+                    DebugUtils.Log("Couldn't find " + value);
+                else
+                    SetPrefab(prefab);
+            }
         }
         // enabled
         public bool enabled
@@ -258,6 +265,8 @@ namespace AdvancedVehicleOptions
         }
         #endregion
 
+        public static VehicleInfo prefabUpdateUnits = null;
+        public static VehicleInfo prefabUpdateEngine = null;
         private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private VehicleInfo m_prefab = null;
@@ -339,37 +348,93 @@ namespace AdvancedVehicleOptions
             return -1;
         }
 
+        private static int GetTotalUnitGroups(uint unitID)
+        {
+            int count = 0;
+            while (unitID != 0)
+            {
+                CitizenUnit unit = Singleton<CitizenManager>.instance.m_units.m_buffer[unitID];
+                unitID = unit.m_nextUnit;
+                count++;
+            }
+            return count;
+        }
+
         public static IEnumerator UpdateCapacityUnits(ThreadBase t)
         {
             Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
             for (int i = 0; i < vehicles.m_size; i++)
             {
-                int capacity = GetUnitsCapacity(vehicles.m_buffer[i].Info.m_vehicleAI);
-                if (capacity != -1)
+                if (prefabUpdateUnits == null || vehicles.m_buffer[i].Info == prefabUpdateUnits)
                 {
-                    uint unit = vehicles.m_buffer[i].m_citizenUnits;
-                    Singleton<CitizenManager>.instance.ReleaseUnits(unit);
-                    uint citizenUnits;
-                    Singleton<CitizenManager>.instance.CreateUnits(out citizenUnits, ref Singleton<SimulationManager>.instance.m_randomizer, 0, (ushort)i, 0, 0, 0, capacity, 0);
-                    vehicles.m_buffer[i].m_citizenUnits = citizenUnits;
+                    int capacity = GetUnitsCapacity(vehicles.m_buffer[i].Info.m_vehicleAI);
+
+                    if (capacity != -1)
+                    {
+                        CitizenUnit[] units = Singleton<CitizenManager>.instance.m_units.m_buffer;
+                        uint unit = vehicles.m_buffer[i].m_citizenUnits;
+
+                        int currentUnitCount = GetTotalUnitGroups(unit);
+                        int newUnitCount = Mathf.CeilToInt(capacity / 5f);
+
+                        // Capacity reduced
+                        if(newUnitCount < currentUnitCount)
+                        {
+                            // Get the first unit to remove
+                            uint n = unit;
+                            for (int j = 1; j < newUnitCount; j++)
+                                n = units[n].m_nextUnit;
+                            // Releasing units excess
+                            Singleton<CitizenManager>.instance.ReleaseUnits(units[n].m_nextUnit);
+                            units[n].m_nextUnit = 0;
+
+                            DebugUtils.Log("Reducing capacity from ~" + currentUnitCount * 5 + " to " + capacity);
+                        }
+                        // Capacity increased
+                        else if (newUnitCount > currentUnitCount)
+                        {
+                            // Get the last unit
+                            uint n = unit;
+                            while (units[n].m_nextUnit != 0)
+                                n = units[n].m_nextUnit;
+
+                            // Creating missing units
+                            int newCapacity = capacity - currentUnitCount * 5;
+                            Singleton<CitizenManager>.instance.CreateUnits(out units[n].m_nextUnit, ref Singleton<SimulationManager>.instance.m_randomizer, 0, (ushort)i, 0, 0, 0, newCapacity, 0);
+
+                            DebugUtils.Log("Increasing capacity from ~" + currentUnitCount * 5 + " to " + capacity);
+                        }
+                    }
                 }
                 if (i % 256 == 255) yield return null;
             }
+            prefabUpdateUnits = null;
         }
 
         public static IEnumerator UpdateBackEngines(ThreadBase t)
         {
             Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
-            for (int i = 0; i < vehicles.m_size; i++)
+            for (ushort i = 0; i < vehicles.m_size; i++)
             {
-                VehicleInfo info = vehicles.m_buffer[i].Info;
-                if (vehicles.m_buffer[i].m_leadingVehicle == 0 && info.m_trailers != null && info.m_trailers.Length > 0)
+                VehicleInfo prefab = vehicles.m_buffer[i].Info;
+                bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0 && prefab.m_trailers != null && prefab.m_trailers.Length > 0;
+                if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isLeading)
                 {
                     ushort last = vehicles.m_buffer[i].GetLastVehicle((ushort)i);
-                    vehicles.m_buffer[last].Info = info.m_trailers[info.m_trailers.Length - 1].m_info;
+                    ushort oldPrefabID = vehicles.m_buffer[last].m_infoIndex;
+                    ushort newPrefabID = (ushort)prefab.m_trailers[prefab.m_trailers.Length - 1].m_info.m_prefabDataIndex;
+                    if (oldPrefabID != newPrefabID)
+                    {
+                        vehicles.m_buffer[last].m_infoIndex = newPrefabID;
+                        vehicles.m_buffer[last].m_flags = vehicles.m_buffer[vehicles.m_buffer[last].m_leadingVehicle].m_flags;
+
+                        if (prefab.m_trailers[prefab.m_trailers.Length - 1].m_info == prefab)
+                            vehicles.m_buffer[last].m_flags |= Vehicle.Flags.Inverted;
+                    }
                 }
                 if (i % 256 == 255) yield return null;
             }
+            prefabUpdateEngine = null;
         }
 
         public void SetPrefab(VehicleInfo prefab)
@@ -603,10 +668,10 @@ namespace AdvancedVehicleOptions
             {
                 while (PrefabCollection<VehicleInfo>.GetPrefab(0) == null)
                     yield return null;
-
+                
                 for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
-                    DefaultOptions.Store(PrefabCollection<VehicleInfo>.GetPrefab(i));
-
+                        DefaultOptions.Store(PrefabCollection<VehicleInfo>.GetPrefab(i));
+                
                 DebugUtils.Log("Default values stored");
                 Destroy(gameObject);
             }
@@ -614,6 +679,7 @@ namespace AdvancedVehicleOptions
 
         private static Dictionary<VehicleInfo, DefaultOptions> m_default = new Dictionary<VehicleInfo, DefaultOptions>();
         private static Dictionary<VehicleInfo, DefaultOptions> m_modded = new Dictionary<VehicleInfo, DefaultOptions>();
+        private static GameObject m_gameObject;
 
         public static ItemClass.Placement GetPlacementStyle(VehicleInfo prefab)
         {
@@ -632,7 +698,10 @@ namespace AdvancedVehicleOptions
 
         public static void StoreAll()
         {
-            new GameObject("AVO-StoreDefault").AddComponent<StoreDefault>();
+            if (m_gameObject != null) GameObject.DestroyImmediate(m_gameObject);
+
+            m_gameObject = new GameObject("AVO-StoreDefault");
+            m_gameObject.AddComponent<StoreDefault>();
         }
 
         public static void StoreAllModded()
@@ -739,6 +808,7 @@ namespace AdvancedVehicleOptions
         public static void Clear()
         {
             m_default.Clear();
+            m_modded.Clear();
         }
 
         private DefaultOptions(VehicleInfo prefab)
