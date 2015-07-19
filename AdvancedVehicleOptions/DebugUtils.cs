@@ -21,7 +21,24 @@ namespace AdvancedVehicleOptions
 
         public static void Log(string message)
         {
-            Debug.Log(modPrefix + message);
+            if (message == m_lastLog)
+            {
+                m_duplicates++;
+            }
+            else if(m_duplicates > 0)
+            {
+                Debug.Log(modPrefix + "(x" + (m_duplicates + 1) + ")");
+                Debug.Log(modPrefix + message);
+                m_duplicates = 0;
+            }
+            else
+            {
+                Debug.Log(modPrefix + message);
+            }
+            m_lastLog = message;
         }
+
+        private static string m_lastLog;
+        private static int m_duplicates = 0;
     }
 }

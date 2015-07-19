@@ -28,7 +28,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.2.6";
+        public const string version = "1.2.7";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -492,10 +492,22 @@ namespace AdvancedVehicleOptions
             for (int i = 0; i < vehicles.m_size; i++)
             {
                 if (count < 0) break;
-                if (vehicles.m_buffer[i].Info == null)
+
+                bool exists = (vehicles.m_buffer[i].m_flags & Vehicle.Flags.Spawned) != Vehicle.Flags.None;
+
+                bool isSingleTrailer = false;
+                if (exists && vehicles.m_buffer[i].Info != null)
+                {
+                    VehicleOptions options = new VehicleOptions();
+                    options.SetPrefab(vehicles.m_buffer[i].Info);
+                    isSingleTrailer = options.isTrailer && vehicles.m_buffer[i].m_leadingVehicle == 0 && vehicles.m_buffer[i].m_trailingVehicle == 0;
+                }
+
+                if (exists && (vehicles.m_buffer[i].Info == null || isSingleTrailer))
                 {
                     try
                     {
+                        DebugUtils.Log("Removing " + vehicles.m_buffer[i].Info.name);
                         Singleton<VehicleManager>.instance.ReleaseVehicle((ushort)i);
                         count++;
                     }

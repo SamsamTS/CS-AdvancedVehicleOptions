@@ -388,7 +388,7 @@ namespace AdvancedVehicleOptions
                             Singleton<CitizenManager>.instance.ReleaseUnits(units[n].m_nextUnit);
                             units[n].m_nextUnit = 0;
 
-                            DebugUtils.Log("Reducing capacity from ~" + currentUnitCount * 5 + " to " + capacity);
+                            DebugUtils.Log("Reducing capacity of " + vehicles.m_buffer[i].Info.name + " from ~" + currentUnitCount * 5 + " to " + capacity);
                         }
                         // Capacity increased
                         else if (newUnitCount > currentUnitCount)
@@ -402,7 +402,7 @@ namespace AdvancedVehicleOptions
                             int newCapacity = capacity - currentUnitCount * 5;
                             Singleton<CitizenManager>.instance.CreateUnits(out units[n].m_nextUnit, ref Singleton<SimulationManager>.instance.m_randomizer, 0, (ushort)i, 0, 0, 0, newCapacity, 0);
 
-                            DebugUtils.Log("Increasing capacity from ~" + currentUnitCount * 5 + " to " + capacity);
+                            DebugUtils.Log("Increasing capacity of " + vehicles.m_buffer[i].Info.name + " from ~" + currentUnitCount * 5 + " to " + capacity);
                         }
                     }
                 }
@@ -417,8 +417,9 @@ namespace AdvancedVehicleOptions
             for (ushort i = 0; i < vehicles.m_size; i++)
             {
                 VehicleInfo prefab = vehicles.m_buffer[i].Info;
+                bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train;
                 bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0 && prefab.m_trailers != null && prefab.m_trailers.Length > 0;
-                if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isLeading)
+                if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isTrain && isLeading)
                 {
                     ushort last = vehicles.m_buffer[i].GetLastVehicle((ushort)i);
                     ushort oldPrefabID = vehicles.m_buffer[last].m_infoIndex;
@@ -460,6 +461,7 @@ namespace AdvancedVehicleOptions
                     m_localizedName = prefab.name;
                     // Removes the steam ID and trailing _Data from the name
                     m_localizedName = m_localizedName.Substring(m_localizedName.IndexOf('.') + 1).Replace("_Data", "");
+                    DebugUtils.Log(m_localizedName);
                 }
             }
 
