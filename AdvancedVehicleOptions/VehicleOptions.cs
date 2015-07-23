@@ -84,7 +84,7 @@ namespace AdvancedVehicleOptions
             {
                 if (m_prefab == null || !hasTrailer || m_prefab.m_vehicleType != VehicleInfo.VehicleType.Train) return;
 
-                VehicleInfo newTrailer = value ? m_prefab : m_prefab.m_trailers[0].m_info;
+                VehicleInfo newTrailer = value ? m_prefab : DefaultOptions.GetLastTrailer(m_prefab);
                 int last = m_prefab.m_trailers.Length - 1;
 
                 if (m_prefab.m_trailers[last].m_info == newTrailer) return;
@@ -94,7 +94,7 @@ namespace AdvancedVehicleOptions
                 if (value)
                     m_prefab.m_trailers[last].m_invertProbability = m_prefab.m_trailers[last].m_probability;
                 else
-                    m_prefab.m_trailers[last].m_invertProbability = m_prefab.m_trailers[0].m_invertProbability;
+                    m_prefab.m_trailers[last].m_invertProbability = DefaultOptions.GetProbability(prefab);
             }
         }
         // maxSpeed
@@ -143,7 +143,7 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_color0; }
             set
             {
-                if (m_prefab == null) return; 
+                if (m_prefab == null) return;
                 m_prefab.m_color0 = value;
             }
         }
@@ -152,7 +152,7 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_color1; }
             set
             {
-                if (m_prefab == null) return; 
+                if (m_prefab == null) return;
                 m_prefab.m_color1 = value;
             }
         }
@@ -161,7 +161,7 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_color2; }
             set
             {
-                if (m_prefab == null) return; 
+                if (m_prefab == null) return;
                 m_prefab.m_color2 = value;
             }
         }
@@ -170,7 +170,7 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_color3; }
             set
             {
-                if (m_prefab == null) return; 
+                if (m_prefab == null) return;
                 m_prefab.m_color3 = value;
             }
         }
@@ -320,7 +320,7 @@ namespace AdvancedVehicleOptions
         private static int GetUnitsCapacity(VehicleAI vehicleAI)
         {
             VehicleAI ai;
-            
+
             ai = vehicleAI as AmbulanceAI;
             if (ai != null) return ((AmbulanceAI)ai).m_patientCapacity + ((AmbulanceAI)ai).m_paramedicCount;
 
@@ -378,7 +378,7 @@ namespace AdvancedVehicleOptions
                         int newUnitCount = Mathf.CeilToInt(capacity / 5f);
 
                         // Capacity reduced
-                        if(newUnitCount < currentUnitCount)
+                        if (newUnitCount < currentUnitCount)
                         {
                             // Get the first unit to remove
                             uint n = unit;
@@ -446,17 +446,17 @@ namespace AdvancedVehicleOptions
             m_vehicleAI = prefab.m_vehicleAI;
             m_placementStyle = prefab.m_placementStyle;
 
-            m_localizedName = Locale.GetUnchecked("VEHICLE_TITLE", prefab.name);
-            if (m_localizedName.StartsWith("VEHICLE_TITLE"))
+            VehicleInfo engine = GetEngine();
+            if (engine != null)
             {
-                VehicleInfo engine = GetEngine();
-                if (engine != null)
-                {
-                    m_localizedName = Locale.GetUnchecked("VEHICLE_TITLE", engine.name) + " (Trailer)";
-                    m_isTrailer = true;
-                    m_category = GetCategory(engine);
-                }
-                else
+                m_localizedName = Locale.GetUnchecked("VEHICLE_TITLE", engine.name) + " (Trailer)";
+                m_isTrailer = true;
+                m_category = GetCategory(engine);
+            }
+            else
+            {
+                m_localizedName = Locale.GetUnchecked("VEHICLE_TITLE", prefab.name);
+                if (m_localizedName.StartsWith("VEHICLE_TITLE"))
                 {
                     m_localizedName = prefab.name;
                     // Removes the steam ID and trailing _Data from the name
@@ -532,23 +532,45 @@ namespace AdvancedVehicleOptions
             return Category.Citizen;
         }
 
+        private static Dictionary<VehicleInfo, VehicleInfo> _trailerEngines = null;
+        public static void Clear()
+        {
+            if (_trailerEngines != null)
+            {
+                _trailerEngines.Clear();
+                _trailerEngines = null;
+            }
+        }
+
         private VehicleInfo GetEngine()
         {
-            for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
+            if (_trailerEngines == null)
             {
-                VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
-                if (prefab == null) continue;
+                _trailerEngines = new Dictionary<VehicleInfo, VehicleInfo>();
 
-                try
+                for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
                 {
-                    if (prefab.m_trailers != null && prefab.m_trailers.Length > 0 && prefab.m_trailers[0].m_info == m_prefab)
-                        return prefab;
-                }
-                catch(Exception e)
-                {
-                    Debug.LogException(e);
+                    try
+                    {
+                        VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
+
+                        if (prefab.m_trailers == null || prefab.m_trailers.Length == 0) continue;
+
+                        for (int j = 0; j < prefab.m_trailers.Length; j++)
+                        {
+                            if (prefab.m_trailers[j].m_info != prefab && !_trailerEngines.ContainsKey(prefab.m_trailers[j].m_info))
+                                _trailerEngines.Add(prefab.m_trailers[j].m_info, prefab);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
                 }
             }
+
+            if (_trailerEngines.ContainsKey(m_prefab))
+                return _trailerEngines[m_prefab];
 
             return null;
         }
@@ -597,7 +619,7 @@ namespace AdvancedVehicleOptions
                 r = g = b = 0;
             }
         }
-        
+
         public System.Xml.Schema.XmlSchema GetSchema()
         {
             return null;
@@ -663,17 +685,17 @@ namespace AdvancedVehicleOptions
 
             private void OnLevelWasLoaded(int level)
             {
-                if(level == 6) StartCoroutine("Store");
+                if (level == 6) StartCoroutine("Store");
             }
 
             private IEnumerator Store()
             {
                 while (PrefabCollection<VehicleInfo>.GetPrefab(0) == null)
                     yield return null;
-                
+
                 for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
-                        DefaultOptions.Store(PrefabCollection<VehicleInfo>.GetPrefab(i));
-                
+                    DefaultOptions.Store(PrefabCollection<VehicleInfo>.GetPrefab(i));
+
                 DebugUtils.Log("Default values stored");
                 Destroy(gameObject);
             }
@@ -688,6 +710,20 @@ namespace AdvancedVehicleOptions
             if (m_default.ContainsKey(prefab))
                 return m_default[prefab].m_placementStyle;
             return (ItemClass.Placement)(-1);
+        }
+
+        public static VehicleInfo GetLastTrailer(VehicleInfo prefab)
+        {
+            if (m_default.ContainsKey(prefab))
+                return m_default[prefab].m_lastTrailer;
+            return null;
+        }
+
+        public static int GetProbability(VehicleInfo prefab)
+        {
+            if (m_default.ContainsKey(prefab))
+                return m_default[prefab].m_probability;
+            return 0;
         }
 
         public static void Store(VehicleInfo prefab)
@@ -725,50 +761,50 @@ namespace AdvancedVehicleOptions
 
             foreach (VehicleInfo prefab in m_default.Keys)
             {
-                    VehicleOptions options = new VehicleOptions();
-                    options.SetPrefab(prefab);
+                VehicleOptions options = new VehicleOptions();
+                options.SetPrefab(prefab);
 
-                    DefaultOptions modded = m_modded[prefab];
-                    DefaultOptions stored = m_default[prefab];
+                DefaultOptions modded = m_modded[prefab];
+                DefaultOptions stored = m_default[prefab];
 
-                    StringBuilder details = new StringBuilder();
+                StringBuilder details = new StringBuilder();
 
-                    if (modded.m_enabled != stored.m_enabled && options.enabled == stored.m_enabled)
-                    {
-                        options.enabled = modded.m_enabled;
-                        details.Append("enabled, ");
-                    }
-                    if (modded.m_addBackEngine != stored.m_addBackEngine && options.addBackEngine == stored.m_addBackEngine)
-                    {
-                        options.addBackEngine = modded.m_addBackEngine;
-                        details.Append("back engine, ");
-                    }
-                    if (modded.m_maxSpeed != stored.m_maxSpeed && options.maxSpeed == stored.m_maxSpeed)
-                    {
-                        options.maxSpeed = modded.m_maxSpeed;
-                        details.Append("max speed, ");
-                    }
-                    if (modded.m_acceleration != stored.m_acceleration && options.acceleration == stored.m_acceleration)
-                    {
-                        options.acceleration = modded.m_acceleration;
-                        details.Append("acceleration, ");
-                    }
-                    if (modded.m_braking != stored.m_braking && options.braking == stored.m_braking)
-                    {
-                        options.braking = modded.m_braking;
-                        details.Append("braking, ");
-                    }
-                    if (modded.m_capacity != stored.m_capacity && options.capacity == stored.m_capacity)
-                    {
-                        options.capacity = modded.m_capacity;
-                        details.Append("capacity, ");
-                    }
+                if (modded.m_enabled != stored.m_enabled && options.enabled == stored.m_enabled)
+                {
+                    options.enabled = modded.m_enabled;
+                    details.Append("enabled, ");
+                }
+                if (modded.m_addBackEngine != stored.m_addBackEngine && options.addBackEngine == stored.m_addBackEngine)
+                {
+                    options.addBackEngine = modded.m_addBackEngine;
+                    details.Append("back engine, ");
+                }
+                if (modded.m_maxSpeed != stored.m_maxSpeed && options.maxSpeed == stored.m_maxSpeed)
+                {
+                    options.maxSpeed = modded.m_maxSpeed;
+                    details.Append("max speed, ");
+                }
+                if (modded.m_acceleration != stored.m_acceleration && options.acceleration == stored.m_acceleration)
+                {
+                    options.acceleration = modded.m_acceleration;
+                    details.Append("acceleration, ");
+                }
+                if (modded.m_braking != stored.m_braking && options.braking == stored.m_braking)
+                {
+                    options.braking = modded.m_braking;
+                    details.Append("braking, ");
+                }
+                if (modded.m_capacity != stored.m_capacity && options.capacity == stored.m_capacity)
+                {
+                    options.capacity = modded.m_capacity;
+                    details.Append("capacity, ");
+                }
 
-                    if (details.Length > 0)
-                    {
-                        details.Length -= 2;
-                        conflicts.AppendLine(options.name + ": " + details);
-                    }
+                if (details.Length > 0)
+                {
+                    details.Length -= 2;
+                    conflicts.AppendLine(options.name + ": " + details);
+                }
             }
 
             if (conflicts.Length > 0)
@@ -830,6 +866,12 @@ namespace AdvancedVehicleOptions
             m_color3 = options.color3;
             m_capacity = options.capacity;
             m_placementStyle = options.placementStyle;
+
+            if (prefab.m_trailers != null && prefab.m_trailers.Length > 0)
+            {
+                m_lastTrailer = prefab.m_trailers[prefab.m_trailers.Length - 1].m_info;
+                m_probability = prefab.m_trailers[prefab.m_trailers.Length - 1].m_invertProbability;
+            }
         }
 
         private bool m_enabled;
@@ -844,5 +886,7 @@ namespace AdvancedVehicleOptions
         private HexaColor m_color3;
         private int m_capacity;
         private ItemClass.Placement m_placementStyle;
+        private VehicleInfo m_lastTrailer;
+        private int m_probability;
     }
 }

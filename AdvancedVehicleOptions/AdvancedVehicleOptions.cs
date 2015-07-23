@@ -28,7 +28,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.2.7";
+        public const string version = "1.2.9";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -90,6 +90,7 @@ namespace AdvancedVehicleOptions
 
                 try
                 {
+                    VehicleOptions.Clear();
                     m_mainPanel = m_gameObject.AddComponent<GUI.UIMainPanel>();
                     DebugUtils.Log("UIMainPanel created");
                 }
