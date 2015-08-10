@@ -554,11 +554,11 @@ namespace AdvancedVehicleOptions
                     {
                         VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
 
-                        if (prefab.m_trailers == null || prefab.m_trailers.Length == 0) continue;
+                        if (prefab == null || prefab.m_trailers == null || prefab.m_trailers.Length == 0) continue;
 
                         for (int j = 0; j < prefab.m_trailers.Length; j++)
                         {
-                            if (prefab.m_trailers[j].m_info != prefab && !_trailerEngines.ContainsKey(prefab.m_trailers[j].m_info))
+                            if (prefab.m_trailers[j].m_info != null && prefab.m_trailers[j].m_info != prefab && !_trailerEngines.ContainsKey(prefab.m_trailers[j].m_info))
                                 _trailerEngines.Add(prefab.m_trailers[j].m_info, prefab);
                         }
                     }

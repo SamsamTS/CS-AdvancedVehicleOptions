@@ -28,7 +28,7 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.2.9";
+        public const string version = "1.2.10";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
