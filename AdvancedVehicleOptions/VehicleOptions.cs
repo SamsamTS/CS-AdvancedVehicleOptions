@@ -670,6 +670,9 @@ namespace AdvancedVehicleOptions
         [XmlAttribute]
         public string version { get; set; }
 
+        [XmlAttribute, DefaultValue(true)]
+        public bool randomSpeed { get; set; }
+
         [XmlElement("VehicleOptions")]
         public VehicleOptions[] items { get; set; }
     }

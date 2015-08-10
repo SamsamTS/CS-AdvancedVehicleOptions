@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Xml;
 using System.Xml.Serialization;
 using System.Reflection;
 
@@ -28,7 +29,23 @@ namespace AdvancedVehicleOptions
             get { return "Customize your vehicles"; }
         }
 
-        public const string version = "1.2.10";
+        public void OnSettingsUI(UIHelperBase helper)
+        {
+            try
+            {
+                Detour.RandomSpeed.enabled = AdvancedVehicleOptions.GetOption("randomSpeed");
+
+                UIHelperBase group = helper.AddGroup(Name);
+                group.AddCheckbox("Slightly randomize the speed of vehicles", Detour.RandomSpeed.enabled, (b) => { Detour.RandomSpeed.enabled = b; });
+            }
+            catch (Exception e)
+            {
+                DebugUtils.Log("OnSettingsUI failed");
+                Debug.LogException(e);
+            }
+        }
+
+        public const string version = "1.3.0";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -119,6 +136,7 @@ namespace AdvancedVehicleOptions
             {
                 SaveConfig();
                 m_options = null;
+                Detour.RandomSpeed.Restore();
 
                 GUI.UIUtils.DestroyDeeply(m_mainPanel);
                 GameObject.Destroy(m_gameObject);
@@ -220,6 +238,33 @@ namespace AdvancedVehicleOptions
             LogVehicleListSteamID();
         }
 
+        public static bool GetOption(string name)
+        {
+            if (!File.Exists(m_fileName)) return true;
+
+            try
+            {
+                using(XmlTextReader reader = new XmlTextReader(m_fileName))
+                {
+                    reader.ReadToFollowing("ArrayOfVehicleOptions");
+                    if (reader.GetAttribute(name) == "false") return false;
+                }
+            }
+            catch (Exception e)
+            {
+                // Couldn't Deserialize (XML malformed?)
+                DebugUtils.Warning("Couldn't load configuration (XML malformed?)");
+                Debug.LogException(e);
+            }
+
+            return true;
+        }
+
+        public static void saveOption(string name)
+        {
+            //TODO: save the option
+        }
+
         /// <summary>
         /// Save the configuration file
         /// </summary>
@@ -233,7 +278,7 @@ namespace AdvancedVehicleOptions
                 {
                     stream.SetLength(0); // Emptying the file !!!
                     XmlSerializer xmlSerializer = new XmlSerializer(typeof(OptionsList));
-                    xmlSerializer.Serialize(stream, new OptionsList() { version = ModInfo.version, items = m_options });
+                    xmlSerializer.Serialize(stream, new OptionsList() { version = ModInfo.version, randomSpeed = Detour.RandomSpeed.enabled, items = m_options });
                     DebugUtils.Log("Configuration saved");
                 }
             }

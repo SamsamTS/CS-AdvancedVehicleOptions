@@ -96,6 +96,10 @@ namespace AdvancedVehicleOptions.GUI
 
             // Loading config
             AdvancedVehicleOptions.LoadConfig(this);
+
+            // Random Speed
+            Detour.RandomSpeed.activated = true;
+            Detour.RandomSpeed.Intitialize();
         }
 
         public override void OnDestroy()
