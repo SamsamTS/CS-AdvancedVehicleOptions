@@ -7,8 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using System.Xml;
-using System.Xml.Serialization;
 using System.Reflection;
 
 using ColossalFramework;
@@ -33,10 +31,11 @@ namespace AdvancedVehicleOptions
         {
             try
             {
-                Detour.RandomSpeed.enabled = AdvancedVehicleOptions.GetOption("randomSpeed");
+                AdvancedVehicleOptions.LoadConfig();
+                Detour.RandomSpeed.enabled = AdvancedVehicleOptions.config.randomSpeed;
 
                 UIHelperBase group = helper.AddGroup(Name);
-                group.AddCheckbox("Slightly randomize the speed of vehicles", Detour.RandomSpeed.enabled, (b) => { Detour.RandomSpeed.enabled = b; });
+                group.AddCheckbox("Slightly randomize the speed of vehicles", Detour.RandomSpeed.enabled, (b) => { Detour.RandomSpeed.enabled = b; AdvancedVehicleOptions.SaveConfig(); });
             }
             catch (Exception e)
             {
@@ -51,7 +50,6 @@ namespace AdvancedVehicleOptions
     public class AdvancedVehicleOptions : LoadingExtensionBase
     {
         private static GameObject m_gameObject;
-        private static VehicleOptions[] m_options;
         private static GUI.UIMainPanel m_mainPanel;
 
         private static List<VehicleInfo> m_removeList = new List<VehicleInfo>();
@@ -65,6 +63,9 @@ namespace AdvancedVehicleOptions
         private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private const string m_fileName = "AdvancedVehicleOptions.xml";
+
+        public static bool isGameLoaded = false;
+        public static Configuration config = new Configuration();
                 
         #region LoadingExtensionBase overrides
         public override void OnCreated(ILoading loading)
@@ -99,6 +100,8 @@ namespace AdvancedVehicleOptions
                     DefaultOptions.Clear();
                     return;
                 }
+
+                isGameLoaded = true;
 
                 // Creating GUI
                 UIView view = UIView.GetAView();
@@ -135,11 +138,12 @@ namespace AdvancedVehicleOptions
             try
             {
                 SaveConfig();
-                m_options = null;
                 Detour.RandomSpeed.Restore();
 
                 GUI.UIUtils.DestroyDeeply(m_mainPanel);
                 GameObject.Destroy(m_gameObject);
+
+                isGameLoaded = false;
             }
             catch (Exception e)
             {
@@ -165,10 +169,13 @@ namespace AdvancedVehicleOptions
         /// <summary>
         /// Load and apply the configuration file
         /// </summary>
-        public static void LoadConfig(UIComponent source)
+        public static void LoadConfig()
         {
-            // Clear all options
-            m_options = null; 
+            if(!isGameLoaded)
+            {
+                if (File.Exists(m_fileName)) config.Deserialize(m_fileName);
+                return;
+            }
 
             // Store modded values
             DefaultOptions.StoreAllModded();
@@ -180,45 +187,27 @@ namespace AdvancedVehicleOptions
                 CreateConfig();
 
                 // Update GUI list
-                m_mainPanel.optionList = m_options;
+                m_mainPanel.optionList = config.options;
                 return;
             }
 
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(OptionsList));
-            OptionsList options = null;
+            config.Deserialize(m_fileName);
 
-            try
+            if (config.options == null)
             {
-                // Trying to Deserialize the configuration file
-                using (FileStream stream = new FileStream(m_fileName, FileMode.Open))
-                {
-                    options = xmlSerializer.Deserialize(stream) as OptionsList;
-                }
-            }
-            catch (Exception e)
-            {
-                // Couldn't Deserialize (XML malformed?)
-                DebugUtils.Warning("Couldn't load configuration (XML malformed?)");
-                Debug.LogException(e);
-
-                options = null;
-            }
-
-            if (options == null || options.items == null)
-            {
-                DebugUtils.Warning("Couldn't load configuration (vehicle list is null). Default values will be used.");
+                DebugUtils.Log("Configuration empty. Default values will be used.");
             }
             else
             {
                 // Remove unneeded options
                 List<VehicleOptions> optionsList = new List<VehicleOptions>();
 
-                for (uint i = 0; i < options.items.Length; i++)
+                for (uint i = 0; i < config.options.Length; i++)
                 {
-                    if (options.items[i] != null && options.items[i].prefab != null) optionsList.Add(options.items[i]);
+                    if (config.options[i] != null && config.options[i].prefab != null) optionsList.Add(config.options[i]);
                 }
 
-                m_options = optionsList.ToArray();
+                config.options = optionsList.ToArray();
             }
 
             // Checking for new vehicles
@@ -232,37 +221,10 @@ namespace AdvancedVehicleOptions
             new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
 
             // Update GUI list
-            m_mainPanel.optionList = m_options;
+            m_mainPanel.optionList = config.options;
 
             DebugUtils.Log("Configuration loaded");
             LogVehicleListSteamID();
-        }
-
-        public static bool GetOption(string name)
-        {
-            if (!File.Exists(m_fileName)) return true;
-
-            try
-            {
-                using(XmlTextReader reader = new XmlTextReader(m_fileName))
-                {
-                    reader.ReadToFollowing("ArrayOfVehicleOptions");
-                    if (reader.GetAttribute(name) == "false") return false;
-                }
-            }
-            catch (Exception e)
-            {
-                // Couldn't Deserialize (XML malformed?)
-                DebugUtils.Warning("Couldn't load configuration (XML malformed?)");
-                Debug.LogException(e);
-            }
-
-            return true;
-        }
-
-        public static void saveOption(string name)
-        {
-            //TODO: save the option
         }
 
         /// <summary>
@@ -270,23 +232,8 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public static void SaveConfig()
         {
-            if (m_options == null) return;
-
-            try
-            {
-                using (FileStream stream = new FileStream(m_fileName, FileMode.OpenOrCreate))
-                {
-                    stream.SetLength(0); // Emptying the file !!!
-                    XmlSerializer xmlSerializer = new XmlSerializer(typeof(OptionsList));
-                    xmlSerializer.Serialize(stream, new OptionsList() { version = ModInfo.version, randomSpeed = Detour.RandomSpeed.enabled, items = m_options });
-                    DebugUtils.Log("Configuration saved");
-                }
-            }
-            catch (Exception e)
-            {
-                DebugUtils.Warning("Couldn't save configuration at \"" + Directory.GetCurrentDirectory() + "\"");
-                Debug.LogException(e);
-            }
+            config.randomSpeed = Detour.RandomSpeed.enabled;
+            config.Serialize(m_fileName);
         }
 
         public static void ClearVehicles(VehicleOptions options, bool parked)
@@ -434,23 +381,23 @@ namespace AdvancedVehicleOptions
 
             if (removerList != null || colorList != null)
             {
-                for (int i = 0; i < m_options.Length; i++)
+                for (int i = 0; i < config.options.Length; i++)
                 {
                     if (removerList != null)
                     {
-                        OldMods.Vehicle vehicle = removerList.Find((v) => { return v.name == m_options[i].name; });
-                        if (vehicle.name == m_options[i].name) m_options[i].enabled = vehicle.enabled;
+                        OldMods.Vehicle vehicle = removerList.Find((v) => { return v.name == config.options[i].name; });
+                        if (vehicle.name == config.options[i].name) config.options[i].enabled = vehicle.enabled;
                     }
 
                     if (colorList != null)
                     {
-                        OldMods.VehicleColorInfo vehicle = colorList.Find((v) => { return v.name == m_options[i].name; });
-                        if (vehicle != null && vehicle.name == m_options[i].name)
+                        OldMods.VehicleColorInfo vehicle = colorList.Find((v) => { return v.name == config.options[i].name; });
+                        if (vehicle != null && vehicle.name == config.options[i].name)
                         {
-                            m_options[i].color0 = vehicle.color0;
-                            m_options[i].color1 = vehicle.color1;
-                            m_options[i].color2 = vehicle.color2;
-                            m_options[i].color3 = vehicle.color3;
+                            config.options[i].color0 = vehicle.color0;
+                            config.options[i].color1 = vehicle.color1;
+                            config.options[i].color2 = vehicle.color2;
+                            config.options[i].color3 = vehicle.color3;
                         }
                     }
                 }
@@ -465,7 +412,7 @@ namespace AdvancedVehicleOptions
         private static void CompileVehiclesList()
         {
             List<VehicleOptions> optionsList = new List<VehicleOptions>();
-            if(m_options != null) optionsList.AddRange(m_options);
+            if (config.options != null) optionsList.AddRange(config.options);
 
             for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
             {
@@ -480,21 +427,21 @@ namespace AdvancedVehicleOptions
                 optionsList.Add(options);
             }
 
-            if(m_options != null)
-                DebugUtils.Log("Found " + (optionsList.Count - m_options.Length) + " new vehicle(s)");
+            if (config.options != null)
+                DebugUtils.Log("Found " + (optionsList.Count - config.options.Length) + " new vehicle(s)");
             else
                 DebugUtils.Log("Found " + optionsList.Count + " new vehicle(s)");
 
-            m_options = optionsList.ToArray();
+            config.options = optionsList.ToArray();
 
         }
 
         private static bool ContainsPrefab(VehicleInfo prefab)
         {
-            if (m_options == null) return false;
-            for (int i = 0; i < m_options.Length; i++)
+            if (config.options == null) return false;
+            for (int i = 0; i < config.options.Length; i++)
             {
-                if (m_options[i].prefab == prefab) return true;
+                if (config.options[i].prefab == prefab) return true;
             }
             return false;
         }
@@ -503,11 +450,11 @@ namespace AdvancedVehicleOptions
         {
             StringBuilder steamIDs = new StringBuilder("Vehicle Steam IDs : ");
 
-            for (int i = 0; i < m_options.Length; i++)
+            for (int i = 0; i < config.options.Length; i++)
             {
-                if (m_options[i] != null && m_options[i].name.Contains("."))
+                if (config.options[i] != null && config.options[i].name.Contains("."))
                 {
-                    steamIDs.Append(m_options[i].name.Substring(0, m_options[i].name.IndexOf(".")));
+                    steamIDs.Append(config.options[i].name.Substring(0, config.options[i].name.IndexOf(".")));
                     steamIDs.Append(",");
                 }
             }

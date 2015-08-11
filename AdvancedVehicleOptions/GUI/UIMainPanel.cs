@@ -95,7 +95,7 @@ namespace AdvancedVehicleOptions.GUI
             });
 
             // Loading config
-            AdvancedVehicleOptions.LoadConfig(this);
+            AdvancedVehicleOptions.LoadConfig();
 
             // Random Speed
             Detour.RandomSpeed.activated = true;
@@ -204,7 +204,7 @@ namespace AdvancedVehicleOptions.GUI
             // Event handlers
             m_fastList.eventSelectedIndexChanged += OnSelectedItemChanged; 
             m_optionPanel.eventEnableCheckChanged += OnEnableStateChanged;
-            m_reload.eventClick += (c, t) => AdvancedVehicleOptions.LoadConfig(this);
+            m_reload.eventClick += (c, t) => AdvancedVehicleOptions.LoadConfig();
             m_save.eventClick += (c, t) => AdvancedVehicleOptions.SaveConfig();
 
             panel.eventMouseDown += (c, p) =>

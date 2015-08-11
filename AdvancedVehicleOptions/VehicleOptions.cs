@@ -362,6 +362,7 @@ namespace AdvancedVehicleOptions
 
         public static IEnumerator UpdateCapacityUnits(ThreadBase t)
         {
+            int count = 0;
             Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
             for (int i = 0; i < vehicles.m_size; i++)
             {
@@ -388,7 +389,7 @@ namespace AdvancedVehicleOptions
                             Singleton<CitizenManager>.instance.ReleaseUnits(units[n].m_nextUnit);
                             units[n].m_nextUnit = 0;
 
-                            DebugUtils.Log("Reducing capacity of " + vehicles.m_buffer[i].Info.name + " from ~" + currentUnitCount * 5 + " to " + capacity);
+                            count++;
                         }
                         // Capacity increased
                         else if (newUnitCount > currentUnitCount)
@@ -402,13 +403,15 @@ namespace AdvancedVehicleOptions
                             int newCapacity = capacity - currentUnitCount * 5;
                             Singleton<CitizenManager>.instance.CreateUnits(out units[n].m_nextUnit, ref Singleton<SimulationManager>.instance.m_randomizer, 0, (ushort)i, 0, 0, 0, newCapacity, 0);
 
-                            DebugUtils.Log("Increasing capacity of " + vehicles.m_buffer[i].Info.name + " from ~" + currentUnitCount * 5 + " to " + capacity);
+                            count++;
                         }
                     }
                 }
                 if (i % 256 == 255) yield return null;
             }
             prefabUpdateUnits = null;
+
+            DebugUtils.Log("Modified capacity of " + count + " vehicle(s)");
         }
 
         public static IEnumerator UpdateBackEngines(ThreadBase t)
@@ -661,20 +664,6 @@ namespace AdvancedVehicleOptions
         {
             return new Color(c.r, c.g, c.b, 1f);
         }
-    }
-
-    [XmlType("ArrayOfVehicleOptions")]
-    [Serializable]
-    public class OptionsList
-    {
-        [XmlAttribute]
-        public string version { get; set; }
-
-        [XmlAttribute, DefaultValue(true)]
-        public bool randomSpeed { get; set; }
-
-        [XmlElement("VehicleOptions")]
-        public VehicleOptions[] items { get; set; }
     }
 
     public class DefaultOptions
