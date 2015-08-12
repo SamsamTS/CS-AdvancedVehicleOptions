@@ -28,7 +28,7 @@ namespace AdvancedVehicleOptions
             public HexaColor color2;
             public HexaColor color3;
             [DefaultValue(-1)]
-            public int capacity;
+            public int capacity = -1;
             #endregion
         }
 

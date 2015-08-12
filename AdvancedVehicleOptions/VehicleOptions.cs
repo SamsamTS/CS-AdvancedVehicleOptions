@@ -222,7 +222,7 @@ namespace AdvancedVehicleOptions
             }
             set
             {
-                if (m_prefab == null || capacity == -1) return;
+                if (m_prefab == null || capacity == -1 || value <= 0) return;
 
                 VehicleAI ai;
 
