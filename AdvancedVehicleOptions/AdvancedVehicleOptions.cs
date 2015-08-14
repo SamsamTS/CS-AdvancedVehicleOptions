@@ -33,9 +33,25 @@ namespace AdvancedVehicleOptions
             {
                 AdvancedVehicleOptions.LoadConfig();
                 Detour.RandomSpeed.enabled = AdvancedVehicleOptions.config.randomSpeed;
+                Detour.RandomSpeed.highwaySpeed = AdvancedVehicleOptions.config.highwaySpeed;
+
+                UICheckBox highway = null;
 
                 UIHelperBase group = helper.AddGroup(Name);
-                group.AddCheckbox("Slightly randomize the speed of vehicles", Detour.RandomSpeed.enabled, (b) => { Detour.RandomSpeed.enabled = b; AdvancedVehicleOptions.SaveConfig(); });
+                group.AddCheckbox("Slightly randomize the speed of vehicles", Detour.RandomSpeed.enabled, (b) =>
+                {
+                    Detour.RandomSpeed.enabled = b;
+                    highway.enabled = b;
+                    AdvancedVehicleOptions.SaveConfig();
+                });
+
+                highway = (UICheckBox)group.AddCheckbox("Realistic highway speeds", Detour.RandomSpeed.highwaySpeed, (b) =>
+                {
+                    Detour.RandomSpeed.highwaySpeed = b;
+                    AdvancedVehicleOptions.SaveConfig();
+                });
+
+                highway.enabled = Detour.RandomSpeed.enabled;
             }
             catch (Exception e)
             {
@@ -44,7 +60,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.3.2";
+        public const string version = "1.3.3";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -232,7 +248,9 @@ namespace AdvancedVehicleOptions
         /// </summary>
         public static void SaveConfig()
         {
+            config.version = ModInfo.version;
             config.randomSpeed = Detour.RandomSpeed.enabled;
+            config.highwaySpeed = Detour.RandomSpeed.highwaySpeed;
             config.Serialize(m_fileName);
         }
 

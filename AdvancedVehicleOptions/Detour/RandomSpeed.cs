@@ -10,7 +10,12 @@ namespace AdvancedVehicleOptions.Detour
     {
         private static bool _enabled = false;
         private static bool _detoured = false;
-        private static ushort _lastVehicleID;
+
+        private static float _lastFactor;
+        private static Dictionary<ushort, ushort> _previousVehicleSegment = new Dictionary<ushort,ushort>();
+
+        private static Dictionary<Type, Redirection> _CalculateTargetSpeed;
+        private static Redirection _RestrictSpeed;
 
         private class Redirection
         {
@@ -29,11 +34,8 @@ namespace AdvancedVehicleOptions.Detour
             }
         }
 
-        private static Dictionary<Type, Redirection> _CalculateTargetSpeed;
-        private static Redirection _RestrictSpeed;
-        //private static Redirection _SimulationStep;
-
         public static bool activated = false;
+        public static List<NetInfo> highways = new List<NetInfo>();
 
         public static bool enabled
         {
@@ -48,8 +50,27 @@ namespace AdvancedVehicleOptions.Detour
             }
         }
 
+        public static bool highwaySpeed = true;
+
         public static void Intitialize()
         {
+            highways.Clear();
+
+            for (uint i = 0; i < PrefabCollection<NetInfo>.PrefabCount(); i++)
+            {
+                NetInfo info = PrefabCollection<NetInfo>.GetPrefab(i);
+                if (info != null && info.name.ToLower().Contains("highway"))
+                {
+                    int count = 0;
+                    for (int j = 0; j < info.m_lanes.Length; j++ )
+                    {
+                        if(info.m_lanes[j] != null && info.m_lanes[j].m_laneType == NetInfo.LaneType.Vehicle) count++;
+                    }
+
+                    if (count == 3) highways.Add(info);
+                }
+            }
+
             if (_enabled && !_detoured)
             {
                 if (_CalculateTargetSpeed == null)
@@ -57,7 +78,7 @@ namespace AdvancedVehicleOptions.Detour
                     _CalculateTargetSpeed = new Dictionary<Type, Redirection>();
                     MethodInfo CalculateTargetSpeed_detour = typeof(VehicleAIDetour).GetMethod("CalculateTargetSpeed", BindingFlags.NonPublic | BindingFlags.Instance);
 
-                    for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++ )
+                    for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
                     {
                         VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
                         Type aiType = prefab.m_vehicleAI.GetType();
@@ -71,16 +92,6 @@ namespace AdvancedVehicleOptions.Detour
                         }
                     }
 
-                    System.Type[] types = new System.Type[]
-                    {
-                        typeof(ushort),
-                        typeof(Vehicle).MakeByRefType(),
-                        typeof(Vehicle.Frame).MakeByRefType(),
-                        typeof(ushort),
-                        typeof(Vehicle).MakeByRefType(),
-                        typeof(int)
-                    };
-
                     try
                     {
                         Type csl_traffic = Type.GetType("CSL_Traffic.CustomVehicleAI, CSL-Traffic");
@@ -93,16 +104,12 @@ namespace AdvancedVehicleOptions.Detour
                         }
                     }
                     catch { }
-                    /*_SimulationStep = new Redirection();
-                    _SimulationStep.original = typeof(CarAI).GetMethod("SimulationStep", types);
-                    _SimulationStep.detour = typeof(CarAIDetour).GetMethod("SimulationStep", types);*/
                 }
 
                 foreach (Redirection redirct in _CalculateTargetSpeed.Values)
                     redirct.Redirect();
 
                 if (_RestrictSpeed != null) _RestrictSpeed.Redirect();
-                //_SimulationStep.Redirect();
 
                 _detoured = true;
             }
@@ -112,7 +119,6 @@ namespace AdvancedVehicleOptions.Detour
                     redirct.Revert();
 
                 if (_RestrictSpeed != null) _RestrictSpeed.Revert();
-                //_SimulationStep.Revert();
 
                 _detoured = false;
             }
@@ -137,26 +143,19 @@ namespace AdvancedVehicleOptions.Detour
             activated = false;
         }
 
-        public static int count = 0;
-
-        public static float Randomize(float value, int seed)
-        {
-            float step = value / 10f;
-
-            UnityEngine.Random.seed = seed;
-            return UnityEngine.Random.Range(value - step, value + step);
-        }
-
-
         internal class VehicleAIDetour : VehicleAI
         {
             protected new virtual float CalculateTargetSpeed(ushort vehicleID, ref Vehicle data, float speedLimit, float curve)
             {
                 float a = 1000f / (1f + curve * 1000f / this.m_info.m_turning) + 2f;
                 float b = 8f * speedLimit;
-                //return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed);
-                _lastVehicleID = vehicleID;
-                return Randomize(Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed), vehicleID);
+
+                // Original code :
+                // return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed);
+
+                // New code :
+                _lastFactor = GetFactor(vehicleID);
+                return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed) * _lastFactor;
             }
         }
 
@@ -166,29 +165,44 @@ namespace AdvancedVehicleOptions.Detour
             float speed = (float) _RestrictSpeed.original.Invoke(null, new object[]{calculatedSpeed, laneId, info});
             _RestrictSpeed.Redirect();
 
-            return Randomize(speed, _lastVehicleID);
+            return speed * _lastFactor;
         }
 
-        /*internal class CarAIDetour : CarAI
+        private static float Randomize(float value, float percent, int seed)
         {
-            public override void SimulationStep(ushort vehicleID, ref Vehicle vehicleData, ref Vehicle.Frame frameData, ushort leaderID, ref Vehicle leaderData, int lodPhysics)
+            float step = value * percent / 100;
+
+            UnityEngine.Random.seed = seed;
+            return UnityEngine.Random.Range(value - step, value + step);
+        }
+
+        private static float GetFactor(ushort vehicleID)
+        {
+            if (!highwaySpeed) return Randomize(1f, 10f, vehicleID);
+
+            Vehicle vehicle = VehicleManager.instance.m_vehicles.m_buffer[(int)vehicleID];
+            PathUnit path = PathManager.instance.m_pathUnits.m_buffer[vehicle.m_path];
+
+            uint laneID = PathManager.GetLaneID(path.GetPosition(vehicle.m_pathPositionIndex >> 1));
+
+            ushort segmentID = NetManager.instance.m_lanes.m_buffer[laneID].m_segment;
+            NetSegment segment = NetManager.instance.m_segments.m_buffer[segmentID];
+
+            if (!highways.Contains(segment.Info)) return Randomize(1f, 10f, vehicleID);
+
+            uint currentLane = segment.m_lanes;
+
+            int lanePos = 0;
+
+            while (currentLane != 0u && currentLane != laneID)
             {
-                float speed = this.m_info.m_maxSpeed;
-                float acceleration = this.m_info.m_acceleration;
-                float braking = this.m_info.m_braking;
-
-                this.m_info.m_maxSpeed = Randomize(speed, vehicleID);
-                this.m_info.m_acceleration = Randomize(acceleration, vehicleID);
-                this.m_info.m_braking = Randomize(braking, vehicleID);
-
-                _SimulationStep.Revert();
-                base.SimulationStep(vehicleID, ref vehicleData, ref frameData, leaderID, ref leaderData, lodPhysics);
-                _SimulationStep.Redirect();
-
-                this.m_info.m_acceleration = acceleration;
-                this.m_info.m_braking = braking;
-                this.m_info.m_maxSpeed = speed;
+                lanePos++;
+                currentLane = NetManager.instance.m_lanes.m_buffer[(int)currentLane].m_nextLane;
             }
-        }*/
+
+            lanePos = 2 - lanePos;
+
+            return Randomize(1f, 10f, vehicleID) + lanePos / 8f - 0.10f;
+        }
     }
 }

@@ -38,6 +38,9 @@ namespace AdvancedVehicleOptions
         [XmlAttribute, DefaultValue(true)]
         public bool randomSpeed = true;
 
+        [XmlAttribute, DefaultValue(true)]
+        public bool highwaySpeed = true;
+
         [XmlElement("VehicleOptions")]
         public VehicleData[] data;
 
@@ -92,6 +95,7 @@ namespace AdvancedVehicleOptions
             {
                 version = config.version;
                 randomSpeed = config.randomSpeed;
+                highwaySpeed = config.highwaySpeed;
                 data = config.data;
 
                 if (AdvancedVehicleOptions.isGameLoaded) ConvertItems();
