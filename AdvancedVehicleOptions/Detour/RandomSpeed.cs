@@ -186,31 +186,26 @@ namespace AdvancedVehicleOptions.Detour
                 }
 
                 // Highway Speed :
-                Vehicle vehicle = _vehicleManager.m_vehicles.m_buffer[(int)vehicleID];
-                PathUnit path = _pathManager.m_pathUnits.m_buffer[vehicle.m_path];
-
-                uint laneID = PathManager.GetLaneID(path.GetPosition(vehicle.m_pathPositionIndex >> 1));
+                uint laneID = PathManager.GetLaneID(_pathManager.m_pathUnits.m_buffer[_vehicleManager.m_vehicles.m_buffer[(int)vehicleID].m_path].GetPosition(_vehicleManager.m_vehicles.m_buffer[(int)vehicleID].m_pathPositionIndex >> 1));
 
                 if (laneID != 0)
                 {
                     if (_lastLaneIDs[vehicleID] == laneID)
                     {
-                        // Still in same lane
+                        // Still on same lane
                         _lastFactor = _lastFactors[vehicleID];
                         return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed) * _lastFactor;
                     }
                     _lastLaneIDs[vehicleID] = laneID;
 
-                    NetSegment segment = _netManager.m_segments.m_buffer[_netManager.m_lanes.m_buffer[laneID].m_segment];
-
-                    NetInfo info = PrefabCollection<NetInfo>.GetPrefab(segment.m_infoIndex);
+                    NetInfo info = PrefabCollection<NetInfo>.GetPrefab(_netManager.m_segments.m_buffer[_netManager.m_lanes.m_buffer[laneID].m_segment].m_infoIndex);
 
                     for (int i = 0; i < _highways.Length; i++)
                     {
                         if (_highways[i] == info)
                         {
                             // On highway
-                            uint currentLane = segment.m_lanes;
+                            uint currentLane = _netManager.m_segments.m_buffer[_netManager.m_lanes.m_buffer[laneID].m_segment].m_lanes;
                             int lanePos = 0;
 
                             while (currentLane != 0u && currentLane != laneID)

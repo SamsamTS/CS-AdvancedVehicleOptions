@@ -60,7 +60,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.3.6";
+        public const string version = "1.3.7";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -497,13 +497,9 @@ namespace AdvancedVehicleOptions
         private IEnumerator BrokenVehicleFix(ThreadBase t)
         {
             // Fix broken vehicles ?
-            int count = 0;
-
             Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
             for (int i = 0; i < vehicles.m_size; i++)
             {
-                if (count < 0) break;
-
                 bool exists = (vehicles.m_buffer[i].m_flags & Vehicle.Flags.Spawned) != Vehicle.Flags.None;
 
                 bool isSingleTrailer = false;
@@ -514,13 +510,11 @@ namespace AdvancedVehicleOptions
                     isSingleTrailer = options.isTrailer && vehicles.m_buffer[i].m_leadingVehicle == 0 && vehicles.m_buffer[i].m_trailingVehicle == 0;
                 }
 
-                if (exists && (vehicles.m_buffer[i].Info == null || isSingleTrailer))
+                if (vehicles.m_buffer[i].Info == null || (exists && isSingleTrailer))
                 {
                     try
                     {
-                        DebugUtils.Log("Removing " + vehicles.m_buffer[i].Info.name);
                         Singleton<VehicleManager>.instance.ReleaseVehicle((ushort)i);
-                        count++;
                     }
                     catch { }
                 }
@@ -530,20 +524,31 @@ namespace AdvancedVehicleOptions
             Array16<VehicleParked> vehiclesParked = Singleton<VehicleManager>.instance.m_parkedVehicles;
             for (int i = 0; i < vehiclesParked.m_size; i++)
             {
-                if (count < 0) break;
                 if (vehiclesParked.m_buffer[i].Info == null)
                 {
                     try
                     {
                         Singleton<VehicleManager>.instance.ReleaseParkedVehicle((ushort)i);
-                        count++;
                     }
                     catch { }
                 }
                 if (i % 256 == 255) yield return i;
             }
 
-            if (count > 0) DebugUtils.Message(count + " broken vehicle(s) detected and removed.");
+            // Fix broken buildings?
+            Array16<Building> buildings = Singleton<BuildingManager>.instance.m_buildings;
+            for (int i = 0; i < buildings.m_size; i++)
+            {
+                if (buildings.m_buffer[i].Info == null)
+                {
+                    try
+                    {
+                        Singleton<BuildingManager>.instance.ReleaseBuilding((ushort)i);
+                    }
+                    catch { }
+                }
+                if (i % 256 == 255) yield return i;
+            }
         }
     }
 }
