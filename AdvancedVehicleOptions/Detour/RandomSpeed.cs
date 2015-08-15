@@ -106,6 +106,7 @@ namespace AdvancedVehicleOptions.Detour
                     for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
                     {
                         VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
+                        if (prefab == null) continue;
                         Type aiType = prefab.m_vehicleAI.GetType();
 
                         if (prefab.m_vehicleAI is VehicleAI && !_CalculateTargetSpeed.ContainsKey(aiType))
@@ -189,36 +190,40 @@ namespace AdvancedVehicleOptions.Detour
                 PathUnit path = _pathManager.m_pathUnits.m_buffer[vehicle.m_path];
 
                 uint laneID = PathManager.GetLaneID(path.GetPosition(vehicle.m_pathPositionIndex >> 1));
-                if (_lastLaneIDs[vehicleID] == laneID)
+
+                if (laneID != 0)
                 {
-                    // Still in same lane
-                    _lastFactor = _lastFactors[vehicleID];
-                    return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed) * _lastFactor;
-                }
-                _lastLaneIDs[vehicleID] = laneID;
-
-                NetSegment segment = _netManager.m_segments.m_buffer[_netManager.m_lanes.m_buffer[laneID].m_segment];
-
-                NetInfo info = PrefabCollection<NetInfo>.GetPrefab(segment.m_infoIndex);
-
-                for (int i = 0; i < _highways.Length; i++)
-                {
-                    if (_highways[i] == info)
+                    if (_lastLaneIDs[vehicleID] == laneID)
                     {
-                        // On highway
-                        uint currentLane = segment.m_lanes;
-                        int lanePos = 0;
-
-                        while (currentLane != 0u && currentLane != laneID)
-                        {
-                            lanePos++;
-                            currentLane = _netManager.m_lanes.m_buffer[(int)currentLane].m_nextLane;
-                        }
-
-                        lanePos = 2 - lanePos;
-
-                        _lastFactor = _lastFactors[vehicleID] = _factors[vehicleID] + lanePos / 8f - 0.10f;
+                        // Still in same lane
+                        _lastFactor = _lastFactors[vehicleID];
                         return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed) * _lastFactor;
+                    }
+                    _lastLaneIDs[vehicleID] = laneID;
+
+                    NetSegment segment = _netManager.m_segments.m_buffer[_netManager.m_lanes.m_buffer[laneID].m_segment];
+
+                    NetInfo info = PrefabCollection<NetInfo>.GetPrefab(segment.m_infoIndex);
+
+                    for (int i = 0; i < _highways.Length; i++)
+                    {
+                        if (_highways[i] == info)
+                        {
+                            // On highway
+                            uint currentLane = segment.m_lanes;
+                            int lanePos = 0;
+
+                            while (currentLane != 0u && currentLane != laneID)
+                            {
+                                lanePos++;
+                                currentLane = _netManager.m_lanes.m_buffer[(int)currentLane].m_nextLane;
+                            }
+
+                            lanePos = 2 - lanePos;
+
+                            _lastFactor = _lastFactors[vehicleID] = _factors[vehicleID] + lanePos / 8f - 0.10f;
+                            return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed) * _lastFactor;
+                        }
                     }
                 }
 

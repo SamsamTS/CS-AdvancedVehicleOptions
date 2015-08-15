@@ -464,7 +464,6 @@ namespace AdvancedVehicleOptions
                     m_localizedName = prefab.name;
                     // Removes the steam ID and trailing _Data from the name
                     m_localizedName = m_localizedName.Substring(m_localizedName.IndexOf('.') + 1).Replace("_Data", "");
-                    DebugUtils.Log(m_localizedName);
                 }
             }
 
