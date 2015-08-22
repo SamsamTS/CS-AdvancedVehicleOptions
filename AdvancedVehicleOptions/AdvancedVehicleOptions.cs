@@ -76,7 +76,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.3.9";
+        public const string version = "1.3.10";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -247,8 +247,6 @@ namespace AdvancedVehicleOptions
                     "Do you want to enable these features ?\n(Can be enabled/disabled in the mod options)";
                 GUI.UIWarningModal.instance.Show(true);
 
-                // Update GUI list
-                m_mainPanel.optionList = config.options;
                 return;
             }
 

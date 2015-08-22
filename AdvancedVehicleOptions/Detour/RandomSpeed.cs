@@ -11,7 +11,7 @@ namespace AdvancedVehicleOptions.Detour
         private static bool _enabled = false;
         private static bool _detoured = false;
 
-        private static float _lastFactor;
+        private static float _lastFactor = 1f;
         private static float[] _factors;
         private static float[] _lastFactors;
         private static uint[] _lastLaneIDs;
@@ -62,15 +62,16 @@ namespace AdvancedVehicleOptions.Detour
         {
             if (_factors == null)
             {
-                // Precalculate factors for better performances
                 _factors = new float[ushort.MaxValue + 1];
+                _lastFactors = new float[ushort.MaxValue + 1];
+                _lastLaneIDs = new uint[ushort.MaxValue + 1];
+
+                // Precalculate factors for better performances
                 for (int i = 0; i < _factors.Length; i++)
                 {
                     _factors[i] = Randomize(1f, 10f, i);
+                    _lastFactors[i] = _factors[i];
                 }
-
-                _lastFactors = new float[ushort.MaxValue + 1];
-                _lastLaneIDs = new uint[ushort.MaxValue + 1];
             }
 
             _vehicleManager = VehicleManager.instance;
@@ -185,7 +186,7 @@ namespace AdvancedVehicleOptions.Detour
                     return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed) * _factors[vehicleID];
                 }
 
-                // Highway Speed :
+                // Highway Speeds :
                 uint laneID = PathManager.GetLaneID(_pathManager.m_pathUnits.m_buffer[_vehicleManager.m_vehicles.m_buffer[(int)vehicleID].m_path].GetPosition(_vehicleManager.m_vehicles.m_buffer[(int)vehicleID].m_pathPositionIndex >> 1));
 
                 if (laneID != 0)
