@@ -58,6 +58,7 @@
     <Compile Include="AdvancedVehicleOptions.cs" />
     <Compile Include="GUI\UIUtils.cs" />
     <Compile Include="GUI\UIVehicleItem.cs" />
+    <Compile Include="GUI\UIWarningModal.cs" />
     <Compile Include="PreviewRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Configuration.cs" />

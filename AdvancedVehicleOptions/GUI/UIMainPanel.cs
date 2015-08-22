@@ -62,54 +62,63 @@ namespace AdvancedVehicleOptions.GUI
         {
             base.Start();
 
-            UIView view = GetUIView();
-
-            name = "AdvancedVehicleOptions";
-            backgroundSprite = "UnlockingPanel2";
-            isVisible = false;
-            canFocus = true;
-            isInteractive = true;
-            width = WIDTHLEFT + WIDTHRIGHT;
-            height = HEIGHT;
-            relativePosition = new Vector3(Mathf.Floor((view.fixedWidth - width) / 2), Mathf.Floor((view.fixedHeight - height) / 2));
-
-            // Get camera controller
-            GameObject go = GameObject.FindGameObjectWithTag("MainCamera");
-            if (go != null)
-            {
-                m_cameraController = go.GetComponent<CameraController>();
-            }
-
-            // Setting up UI
-            SetupControls();
-
-            // Adding main button
-            UITabstrip toolStrip = view.FindUIComponent<UITabstrip>("MainToolstrip");
-            m_button = toolStrip.AddUIComponent<UISprite>();
-            m_button.spriteName = "IconCitizenVehicle";
-            m_button.size = m_button.spriteInfo.pixelSize;
-            m_button.relativePosition = new Vector3(0, 5);
-
-            view.FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
-
-            m_button.eventClick += new MouseEventHandler((c, p) =>
-            {
-                if (p != null) p.Use();
-                isVisible = !isVisible;
-                if (isVisible)
-                {
-                    m_fastList.DisplayAt(m_fastList.listPosition);
-                    m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
-                    m_preview.parent.isVisible = true;
-                }
-            });
-
             // Loading config
             AdvancedVehicleOptions.LoadConfig();
 
             // Random Speed
             Detour.RandomSpeed.activated = true;
             Detour.RandomSpeed.Intitialize();
+
+            if (!AdvancedVehicleOptions.config.hideGUI)
+            {
+                UIView view = GetUIView();
+
+                name = "AdvancedVehicleOptions";
+                backgroundSprite = "UnlockingPanel2";
+                isVisible = false;
+                canFocus = true;
+                isInteractive = true;
+                width = WIDTHLEFT + WIDTHRIGHT;
+                height = HEIGHT;
+                relativePosition = new Vector3(Mathf.Floor((view.fixedWidth - width) / 2), Mathf.Floor((view.fixedHeight - height) / 2));
+
+                // Get camera controller
+                GameObject go = GameObject.FindGameObjectWithTag("MainCamera");
+                if (go != null)
+                {
+                    m_cameraController = go.GetComponent<CameraController>();
+                }
+
+                // Setting up UI
+                SetupControls();
+
+                // Adding main button
+                UITabstrip toolStrip = view.FindUIComponent<UITabstrip>("MainToolstrip");
+                m_button = toolStrip.AddUIComponent<UISprite>();
+                m_button.spriteName = "IconCitizenVehicle";
+                m_button.size = m_button.spriteInfo.pixelSize;
+                m_button.relativePosition = new Vector3(0, 5);
+
+                view.FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
+
+                m_button.eventClick += new MouseEventHandler((c, p) =>
+                {
+                    if (p != null) p.Use();
+                    isVisible = !isVisible;
+                    if (isVisible)
+                    {
+                        m_fastList.DisplayAt(m_fastList.listPosition);
+                        m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
+                        m_preview.parent.isVisible = true;
+                    }
+                });
+
+                optionList = AdvancedVehicleOptions.config.options;
+            }
+            else
+            {
+                GameObject.Destroy(gameObject);
+            }
         }
 
         public override void OnDestroy()

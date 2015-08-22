@@ -5,13 +5,13 @@ using System;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
 using System.Reflection;
 
 using ColossalFramework;
 using ColossalFramework.Threading;
 using ColossalFramework.UI;
+using ColossalFramework.Globalization;
 
 namespace AdvancedVehicleOptions
 {
@@ -38,17 +38,33 @@ namespace AdvancedVehicleOptions
                 UICheckBox highway = null;
 
                 UIHelperBase group = helper.AddGroup(Name);
+
+                group.AddCheckbox("Hide the user interface", AdvancedVehicleOptions.config.hideGUI, (b) =>
+                {
+                    if (AdvancedVehicleOptions.config.hideGUI != b)
+                    {
+                        AdvancedVehicleOptions.hideGUI = b;
+                        AdvancedVehicleOptions.SaveConfig();
+                    }
+                });
+
                 group.AddCheckbox("Slightly randomize the speed of vehicles", Detour.RandomSpeed.enabled, (b) =>
                 {
-                    Detour.RandomSpeed.enabled = b;
-                    highway.enabled = b;
-                    AdvancedVehicleOptions.SaveConfig();
+                    if (Detour.RandomSpeed.enabled != b)
+                    {
+                        Detour.RandomSpeed.enabled = b;
+                        highway.enabled = b;
+                        AdvancedVehicleOptions.SaveConfig();
+                    }
                 });
 
                 highway = (UICheckBox)group.AddCheckbox("Realistic highway speeds", Detour.RandomSpeed.highwaySpeed, (b) =>
                 {
-                    Detour.RandomSpeed.highwaySpeed = b;
-                    AdvancedVehicleOptions.SaveConfig();
+                    if (Detour.RandomSpeed.highwaySpeed != b)
+                    {
+                        Detour.RandomSpeed.highwaySpeed = b;
+                        AdvancedVehicleOptions.SaveConfig();
+                    }
                 });
 
                 highway.enabled = Detour.RandomSpeed.enabled;
@@ -60,7 +76,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.3.8";
+        public const string version = "1.3.9";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -68,13 +84,8 @@ namespace AdvancedVehicleOptions
         private static GameObject m_gameObject;
         private static GUI.UIMainPanel m_mainPanel;
 
-        private static List<VehicleInfo> m_removeList = new List<VehicleInfo>();
-        private static bool m_removeAll = false;
-        private static bool m_removeThreadRunning = false;
-
-        private static List<VehicleInfo> m_removeParkedList = new List<VehicleInfo>();
-        private static bool m_removeParkedThreadRunning = false;
-        private static bool m_removeParkedAll = false;
+        private static VehicleInfo m_removeInfo;
+        private static VehicleInfo m_removeParkedInfo;
 
         private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -82,6 +93,34 @@ namespace AdvancedVehicleOptions
 
         public static bool isGameLoaded = false;
         public static Configuration config = new Configuration();
+
+        public static bool hideGUI
+        {
+            get { return config.hideGUI; }
+
+            set
+            {
+                if(config.hideGUI != value)
+                {
+                    config.hideGUI = value;
+                    if(!value && isGameLoaded)
+                    {
+                        // Creating GUI
+                        UIView view = UIView.GetAView();
+                        m_gameObject = new GameObject("AdvancedVehicleOptions");
+                        m_gameObject.transform.SetParent(view.transform);
+
+                        m_mainPanel = m_gameObject.AddComponent<GUI.UIMainPanel>();
+                    }
+                    else if (value && isGameLoaded)
+                    {
+                        GUI.UIUtils.DestroyDeeply(m_mainPanel);
+                        GameObject.Destroy(m_gameObject);
+                    }
+                    AdvancedVehicleOptions.SaveConfig();
+                }
+            }
+        }
                 
         #region LoadingExtensionBase overrides
         public override void OnCreated(ILoading loading)
@@ -202,12 +241,27 @@ namespace AdvancedVehicleOptions
 
                 CreateConfig();
 
+                // Warning
+                UIView.PushModal(GUI.UIWarningModal.instance);
+                GUI.UIWarningModal.instance.message = "The 'Slightly randomize the speed of vehicles' and the 'Realistic highway speeds' greatly increase the realism of the traffic but also can considerably impact the speed of the simulation.\n\n" +
+                    "Do you want to enable these features ?\n(Can be enabled/disabled in the mod options)";
+                GUI.UIWarningModal.instance.Show(true);
+
                 // Update GUI list
                 m_mainPanel.optionList = config.options;
                 return;
             }
 
             config.Deserialize(m_fileName);
+
+            if (ParseVersion(config.version) < ParseVersion("1.3.9"))
+            {
+                // Warning
+                UIView.PushModal(GUI.UIWarningModal.instance);
+                GUI.UIWarningModal.instance.message = "The 'Slightly randomize the speed of vehicles' and the 'Realistic highway speeds' greatly increase the realism of the traffic but also can considerably impact the speed of the simulation.\n\n" +
+                    "Do you want to enable these features ?\n(Can be enabled/disabled in the mod options)";
+                GUI.UIWarningModal.instance.Show(true);
+            }
 
             if (config.options == null)
             {
@@ -235,10 +289,7 @@ namespace AdvancedVehicleOptions
             // Update existing vehicles
             new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
             new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
-
-            // Update GUI list
-            m_mainPanel.optionList = config.options;
-
+            
             DebugUtils.Log("Configuration loaded");
             LogVehicleListSteamID();
         }
@@ -260,133 +311,96 @@ namespace AdvancedVehicleOptions
             {
                 if(options == null)
                 {
-                    m_removeParkedAll = true;
-                    m_removeParkedList.Clear();
-                    if (!m_removeParkedThreadRunning) new EnumerableActionThread(ActionRemoveParkedAll);
+                    new EnumerableActionThread(ActionRemoveParkedAll);
                     return;
                 }
-                if (!m_removeParkedList.Contains(options.prefab))
-                {
-                    m_removeParkedList.Add(options.prefab);
-                    if (!m_removeParkedThreadRunning) new EnumerableActionThread(ActionRemoveParked);
-                }
+                
+                m_removeParkedInfo = options.prefab;
+                new EnumerableActionThread(ActionRemoveParked);
             }
             else
             {
                 if (options == null)
                 {
-                    m_removeAll = true;
-                    m_removeList.Clear();
-                    if (!m_removeThreadRunning) new EnumerableActionThread(ActionRemoveExistingAll);
+                    new EnumerableActionThread(ActionRemoveExistingAll);
                     return;
                 }
-                if (!m_removeList.Contains(options.prefab))
-                {
-                    m_removeList.Add(options.prefab);
-                    if (!m_removeThreadRunning) new EnumerableActionThread(ActionRemoveExisting);
-                }
+
+                m_removeInfo = options.prefab;
+                new EnumerableActionThread(ActionRemoveExisting);
             }
         }
 
         public static IEnumerator ActionRemoveExisting(ThreadBase t)
         {
-            m_removeThreadRunning = true;
-
             VehicleManager vehicleManager =  Singleton<VehicleManager>.instance;
+            VehicleInfo info = m_removeInfo;
             
-            while(m_removeList.Count != 0)
+            for (ushort i = 0; i < vehicleManager.m_vehicles.m_size; i++)
             {
-                VehicleInfo[] prefabs = m_removeList.ToArray();
-
-                for (ushort i = 0; i < vehicleManager.m_vehicles.m_size; i++)
+                if (vehicleManager.m_vehicles.m_buffer[i].Info != null)
                 {
-                    if (m_removeAll) break;
-                    if (vehicleManager.m_vehicles.m_buffer[i].Info != null)
-                    {
-                        if (prefabs.Contains(vehicleManager.m_vehicles.m_buffer[i].Info))
-                            vehicleManager.ReleaseVehicle(i);
-                    }
-
-                    if (i % 256 == 255) yield return i;
+                    if (info == vehicleManager.m_vehicles.m_buffer[i].Info)
+                        vehicleManager.ReleaseVehicle(i);
                 }
 
-                if(m_removeAll)
-                {
-                    new EnumerableActionThread(ActionRemoveExistingAll);
-                    break;
-                }
-
-                m_removeList.RemoveRange(0, prefabs.Count());
+                if (i % 256 == 255) yield return i;
             }
-
-            m_removeThreadRunning = false;
         }
 
         public static IEnumerator ActionRemoveParked(ThreadBase t)
         {
-            m_removeParkedThreadRunning = true;
-
             VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
-
-            while (m_removeParkedList.Count != 0)
-            {
-                VehicleInfo[] prefabs = m_removeParkedList.ToArray();
-
-                for (ushort i = 0; i < vehicleManager.m_parkedVehicles.m_size; i++)
-                {
-                    if (m_removeParkedAll) break;
-                    if (vehicleManager.m_parkedVehicles.m_buffer[i].Info != null)
-                    {
-                        if (prefabs.Contains(vehicleManager.m_parkedVehicles.m_buffer[i].Info))
-                            vehicleManager.ReleaseParkedVehicle(i);
-                    }
-
-                    if (i % 256 == 255) yield return i;
-                }
-
-                if (m_removeParkedAll)
-                {
-                    new EnumerableActionThread(ActionRemoveParkedAll);
-                    break;
-                }
-                m_removeParkedList.RemoveRange(0, prefabs.Count());
-            }
-
-            m_removeParkedThreadRunning = false;
-        }
-
-        public static IEnumerator ActionRemoveExistingAll(ThreadBase t)
-        {
-            m_removeThreadRunning = true;
-
-            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
-
-            for (ushort i = 0; i < vehicleManager.m_vehicles.m_size; i++)
-            {
-                if (vehicleManager.m_vehicles.m_buffer[i].Info != null)
-                    vehicleManager.ReleaseVehicle(i);
-
-                if (i % 256 == 255) yield return i;
-            }
-
-            m_removeThreadRunning = false;
-        }
-
-        public static IEnumerator ActionRemoveParkedAll(ThreadBase t)
-        {
-            m_removeParkedThreadRunning = true;
-
-            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
+            VehicleInfo info = m_removeParkedInfo;
 
             for (ushort i = 0; i < vehicleManager.m_parkedVehicles.m_size; i++)
             {
                 if (vehicleManager.m_parkedVehicles.m_buffer[i].Info != null)
-                    vehicleManager.ReleaseParkedVehicle(i);
+                {
+                    if (info == vehicleManager.m_parkedVehicles.m_buffer[i].Info)
+                        vehicleManager.ReleaseParkedVehicle(i);
+                }
 
                 if (i % 256 == 255) yield return i;
             }
+        }
 
-            m_removeParkedThreadRunning = false;
+        public static IEnumerator ActionRemoveExistingAll(ThreadBase t)
+        {
+            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
+
+            for (ushort i = 0; i < vehicleManager.m_vehicles.m_size; i++)
+            {
+                vehicleManager.ReleaseVehicle(i);
+                if (i % 256 == 255) yield return i;
+            }
+        }
+
+        public static IEnumerator ActionRemoveParkedAll(ThreadBase t)
+        {
+            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
+
+            for (ushort i = 0; i < vehicleManager.m_parkedVehicles.m_size; i++)
+            {
+                vehicleManager.ReleaseParkedVehicle(i);
+                if (i % 256 == 255) yield return i;
+            }
+        }
+
+        private static int ParseVersion(string version)
+        {
+            int v = 0;
+            string[] t = version.Split('.');
+
+            for(int i = t.Length -1; i >=0; i--)
+            {
+                v *= 100;
+                int a = 0;
+                if(int.TryParse(t[i], out a))
+                    v += a;
+            }
+
+            return v;
         }
 
         private static void CreateConfig()
@@ -496,7 +510,8 @@ namespace AdvancedVehicleOptions
 
         private IEnumerator BrokenAssetsFix(ThreadBase t)
         {
-            uint count = 0;
+            uint brokenCount = 0;
+            uint confusedCount = 0;
 
             // Fix broken vehicles
             Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
@@ -506,26 +521,36 @@ namespace AdvancedVehicleOptions
                 {
                     bool exists = (vehicles.m_buffer[i].m_flags & Vehicle.Flags.Spawned) != Vehicle.Flags.None;
 
+                    // Vehicle validity
+                    InstanceID target;
+                    bool isInfoNull = vehicles.m_buffer[i].Info == null;
+                    bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0;
+                    bool isWaiting = !exists && (vehicles.m_buffer[i].m_flags & Vehicle.Flags.WaitingSpace) != Vehicle.Flags.None;  
+                    bool isConfused = exists && isLeading && !isInfoNull && vehicles.m_buffer[i].Info.m_vehicleAI.GetLocalizedStatus((ushort)i, ref vehicles.m_buffer[i], out target) == Locale.Get("VEHICLE_STATUS_CONFUSED");
                     bool isSingleTrailer = false;
-                    if (exists && vehicles.m_buffer[i].Info != null)
+
+                    if (exists && !isInfoNull && isLeading && !isConfused && !isWaiting)
                     {
                         VehicleOptions options = new VehicleOptions();
                         options.SetPrefab(vehicles.m_buffer[i].Info);
-                        isSingleTrailer = options.isTrailer && vehicles.m_buffer[i].m_leadingVehicle == 0 && vehicles.m_buffer[i].m_trailingVehicle == 0;
+                        isSingleTrailer = options.isTrailer && vehicles.m_buffer[i].m_trailingVehicle == 0;
                     }
 
-                    if (vehicles.m_buffer[i].Info == null || (exists && isSingleTrailer))
+                    if (isInfoNull || isSingleTrailer || isWaiting || isConfused)
                     {
                         try
                         {
                             Singleton<VehicleManager>.instance.ReleaseVehicle((ushort)i);
-                            count++;
+                            if (isInfoNull) brokenCount++;
+                            if (isConfused) confusedCount++;
                         }
                         catch { }
                     }
                 }
                 if (i % 256 == 255) yield return i;
             }
+
+            if (confusedCount > 0) DebugUtils.Log("Removed " + confusedCount + " confused vehicle instances.");
 
             Array16<VehicleParked> vehiclesParked = Singleton<VehicleManager>.instance.m_parkedVehicles;
             for (int i = 0; i < vehiclesParked.m_size; i++)
@@ -535,15 +560,15 @@ namespace AdvancedVehicleOptions
                     try
                     {
                         Singleton<VehicleManager>.instance.ReleaseParkedVehicle((ushort)i);
-                        count++;
+                        brokenCount++;
                     }
                     catch { }
                 }
                 if (i % 256 == 255) yield return i;
             }
 
-            if (count > 0) DebugUtils.Log("Removed " + count + " broken vehicle instances.");
-            count = 0;
+            if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken vehicle instances.");
+            brokenCount = 0;
 
             // Fix broken buildings
             Array16<Building> buildings = Singleton<BuildingManager>.instance.m_buildings;
@@ -554,15 +579,15 @@ namespace AdvancedVehicleOptions
                     try
                     {
                         Singleton<BuildingManager>.instance.ReleaseBuilding((ushort)i);
-                        count++;
+                        brokenCount++;
                     }
                     catch { }
                 }
                 if (i % 256 == 255) yield return i;
             }
 
-            if (count > 0) DebugUtils.Log("Removed " + count + " broken building instances.");
-            count = 0;
+            if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken building instances.");
+            brokenCount = 0;
 
             // Fix broken offers
             TransferManager.TransferOffer[] incomingOffers = typeof(TransferManager).GetField("m_incomingOffers", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as TransferManager.TransferOffer[];
@@ -588,7 +613,7 @@ namespace AdvancedVehicleOptions
                         {
                             incomingAmount[i] -= incomingOffers[num3].Amount;
                             incomingOffers[num3] = incomingOffers[--num2];
-                            count++;
+                            brokenCount++;
                         }
                     }
                     incomingCount[num] = (ushort)num2;
@@ -600,14 +625,16 @@ namespace AdvancedVehicleOptions
                         {
                             outgoingAmount[i] -= outgoingOffers[num5].Amount;
                             outgoingOffers[num5] = outgoingOffers[--num4];
-                            count++;
+                            brokenCount++;
                         }
                     }
                     outgoingCount[num] = (ushort)num4;
                 }
+
+                yield return i;
             }
 
-            if (count > 0) DebugUtils.Log("Removed " + count + " broken transfer offers.");
+            if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken transfer offers.");
         }
 
         private static bool IsInfoNull(TransferManager.TransferOffer offer)

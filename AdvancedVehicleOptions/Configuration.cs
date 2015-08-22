@@ -35,8 +35,11 @@ namespace AdvancedVehicleOptions
         [XmlAttribute]
         public string version;
 
-        [XmlAttribute, DefaultValue(true)]
-        public bool randomSpeed = true;
+        [XmlAttribute, DefaultValue(false)]
+        public bool hideGUI = false;
+
+        [XmlAttribute, DefaultValue(false)]
+        public bool randomSpeed = false;
 
         [XmlAttribute, DefaultValue(true)]
         public bool highwaySpeed = true;

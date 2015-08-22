@@ -10,6 +10,8 @@ namespace AdvancedVehicleOptions.GUI
         private UIButton m_close;
         private UIDragHandle m_drag;
 
+        public bool isModal = false;
+
         public string iconSprite
         {
             get { return m_icon.spriteName; }
@@ -77,7 +79,12 @@ namespace AdvancedVehicleOptions.GUI
             m_close.normalBgSprite = "buttonclose";
             m_close.hoveredBgSprite = "buttonclosehover";
             m_close.pressedBgSprite = "buttonclosepressed";
-            m_close.eventClick += (component, param) => parent.Hide();
+            m_close.eventClick += (component, param) =>
+            {
+                if (isModal)
+                    UIView.PopModal();
+                parent.Hide();
+            };
         }
     }
 }
