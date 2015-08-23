@@ -159,6 +159,9 @@ namespace AdvancedVehicleOptions.GUI
 
         public static void ResizeIcon(UISprite icon, Vector2 maxSize)
         {
+            icon.width = icon.spriteInfo.width;
+            icon.height = icon.spriteInfo.height;
+
             if (icon.height == 0) return;
 
             float ratio = icon.width / icon.height;

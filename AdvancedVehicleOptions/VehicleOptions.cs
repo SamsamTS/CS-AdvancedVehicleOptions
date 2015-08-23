@@ -55,7 +55,13 @@ namespace AdvancedVehicleOptions
         // enabled
         public bool enabled
         {
-            get { return m_prefab.m_placementStyle != ItemClass.Placement.Manual; }
+            get
+            {
+                if (m_engine != null)
+                    return m_engine.m_placementStyle != ItemClass.Placement.Manual;
+
+                return m_prefab.m_placementStyle != ItemClass.Placement.Manual;
+            }
             set
             {
                 if (m_prefab == null) return;
@@ -65,9 +71,27 @@ namespace AdvancedVehicleOptions
                     ItemClass.Placement placement = DefaultOptions.GetPlacementStyle(m_prefab);
 
                     m_prefab.m_placementStyle = (int)placement != -1 ? placement : m_placementStyle;
+
+                    if (hasTrailer)
+                    {
+                        for (uint i = 0; i < m_prefab.m_trailers.Length; i++)
+                        {
+                            placement = DefaultOptions.GetPlacementStyle(m_prefab.m_trailers[i].m_info);
+                            m_prefab.m_trailers[i].m_info.m_placementStyle = (int)placement != -1 ? placement : m_placementStyle;
+                        }
+                    }
                 }
                 else
+                {
                     m_prefab.m_placementStyle = ItemClass.Placement.Manual;
+
+                    if (hasTrailer)
+                    {
+                        for (uint i = 0; i < m_prefab.m_trailers.Length; i++)
+                            m_prefab.m_trailers[i].m_info.m_placementStyle = ItemClass.Placement.Manual;
+                    }
+                }
+
                 // Make transfer vehicles dirty
                 m_transferVehiclesDirty.SetValue(Singleton<VehicleManager>.instance, true);
             }
@@ -270,16 +294,29 @@ namespace AdvancedVehicleOptions
         private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private VehicleInfo m_prefab = null;
+        private VehicleInfo m_engine = null;
         private VehicleAI m_vehicleAI = null;
         private Category m_category = Category.None;
         private ItemClass.Placement m_placementStyle;
         private string m_localizedName;
-        private bool m_isTrailer = false;
         private bool m_hasCapacity = false;
+        private string m_steamID;
+
+        public VehicleOptions() { }
+
+        public VehicleOptions(VehicleInfo prefab)
+        {
+            SetPrefab(prefab);
+        }
 
         public VehicleInfo prefab
         {
             get { return m_prefab; }
+        }
+
+        public VehicleOptions engine
+        {
+            get { return new VehicleOptions(m_engine); }
         }
 
         public ItemClass.Placement placementStyle
@@ -299,7 +336,7 @@ namespace AdvancedVehicleOptions
 
         public bool isTrailer
         {
-            get { return m_isTrailer; }
+            get { return m_engine != null; }
         }
 
         public string localizedName
@@ -314,6 +351,25 @@ namespace AdvancedVehicleOptions
                 if (m_category == Category.None)
                     m_category = GetCategory(m_prefab);
                 return m_category;
+            }
+        }
+
+        public string steamID
+        {
+            get
+            {
+                if (m_steamID != null) return m_steamID;
+
+                if (name.Contains("."))
+                {
+                    m_steamID = name.Substring(0, name.IndexOf("."));
+
+                    ulong result;
+                    if (!ulong.TryParse(m_steamID, out result) || result == 0)
+                        m_steamID = null;
+                }
+
+                return m_steamID;
             }
         }
 
@@ -449,12 +505,11 @@ namespace AdvancedVehicleOptions
             m_vehicleAI = prefab.m_vehicleAI;
             m_placementStyle = prefab.m_placementStyle;
 
-            VehicleInfo engine = GetEngine();
-            if (engine != null)
+            m_engine = GetEngine();
+            if (m_engine != null)
             {
-                m_localizedName = Locale.GetUnchecked("VEHICLE_TITLE", engine.name) + " (Trailer)";
-                m_isTrailer = true;
-                m_category = GetCategory(engine);
+                m_localizedName = Locale.GetUnchecked("VEHICLE_TITLE", m_engine.name) + " (Trailer)";
+                m_category = GetCategory(m_engine);
             }
             else
             {
@@ -477,6 +532,13 @@ namespace AdvancedVehicleOptions
             VehicleOptions options = (VehicleOptions)o;
 
             int delta = category - options.category;
+            if (delta == 0)
+            {
+                if (steamID != null && options.steamID == null)
+                    delta = 1;
+                else if (steamID == null && options.steamID != null)
+                    delta = -1;
+            }
             if (delta == 0) return localizedName.CompareTo(options.localizedName);
 
             return delta;

@@ -31,9 +31,11 @@ namespace AdvancedVehicleOptions.GUI
         #region From UIPanel
         // No need to implement those, they are in UIPanel
         // Those are declared here so they can be used inside UIFastList
+        float width { get; set; }
         bool enabled { get; set; }
         Vector3 relativePosition { get; set; }
         event MouseEventHandler eventClick;
+        event MouseEventHandler eventMouseEnter;
         #endregion
     }
 
@@ -85,6 +87,8 @@ namespace AdvancedVehicleOptions.GUI
         private int m_selectedRowId = -1;
         private bool m_lock = false;
         private bool m_updateContent = true;
+        private bool m_autoHideScrollbar = false;
+        private UIComponent m_lastMouseEnter;
         #endregion
 
         /// <summary>
@@ -104,6 +108,18 @@ namespace AdvancedVehicleOptions.GUI
         }
 
         #region Public accessors
+        public bool autoHideScrollbar
+        {
+            get { return m_autoHideScrollbar; }
+            set
+            {
+                if (m_autoHideScrollbar != value)
+                {
+                    m_autoHideScrollbar = value;
+                    UpdateScrollbar();
+                }
+            }
+        }
         /// <summary>
         /// Change the color of the background
         /// </summary>
@@ -145,7 +161,7 @@ namespace AdvancedVehicleOptions.GUI
             get { return m_canSelect; }
             set
             {
-                if(m_canSelect != value)
+                if (m_canSelect != value)
                 {
                     m_canSelect = value;
 
@@ -197,7 +213,7 @@ namespace AdvancedVehicleOptions.GUI
             }
             set
             {
-                if(m_rowsData != value)
+                if (m_rowsData != value)
                 {
                     m_rowsData = value;
                     DisplayAt(0);
@@ -213,7 +229,7 @@ namespace AdvancedVehicleOptions.GUI
             get { return m_rowHeight; }
             set
             {
-                if(m_rowHeight != value)
+                if (m_rowHeight != value)
                 {
                     m_rowHeight = value;
                     CheckRows();
@@ -262,6 +278,18 @@ namespace AdvancedVehicleOptions.GUI
                     eventSelectedIndexChanged(this, m_selectedDataId);
             }
         }
+
+        public object selectedItem
+        {
+            get
+            {
+                if (m_selectedDataId == -1) return null;
+                return m_rowsData.m_buffer[m_selectedDataId];
+            }
+        }
+
+        public bool selectOnMouseEnter
+        { get; set; }
 
         /// <summary>
         /// The number of pixels moved at each scroll step
@@ -336,6 +364,14 @@ namespace AdvancedVehicleOptions.GUI
             UpdateScrollbar();
             m_updateContent = true;
         }
+
+        /// <summary>
+        /// Refresh the display
+        /// </summary>
+        public void Refresh()
+        {
+            DisplayAt(m_pos);
+        }
         #endregion
 
         #region Overrides
@@ -386,6 +422,9 @@ namespace AdvancedVehicleOptions.GUI
                 listPosition = m_pos - p.wheelDelta * m_stepSize / m_rowHeight;
             else
                 listPosition = m_pos - p.wheelDelta;
+
+            if (selectOnMouseEnter)
+                OnRowClicked(m_lastMouseEnter, p);
         }
         #endregion
 
@@ -393,10 +432,12 @@ namespace AdvancedVehicleOptions.GUI
 
         protected void OnRowClicked(UIComponent component, UIMouseEventParameter p)
         {
+            if (selectOnMouseEnter) m_lastMouseEnter = component;
+
             int max = Mathf.Min(m_rowsData.m_size, m_rows.m_size);
             for (int i = 0; i < max; i++)
             {
-                if(component == (UIComponent)m_rows[i])
+                if (component == (UIComponent)m_rows[i])
                 {
                     selectedIndex = i + Mathf.FloorToInt(m_pos);
                     return;
@@ -422,7 +463,8 @@ namespace AdvancedVehicleOptions.GUI
                 for (int i = m_rows.m_size; i < nbRows; i++)
                 {
                     m_rows.Add(m_panel.AddUIComponent(m_rowType) as IUIFastListRow);
-                    if (m_canSelect) m_rows[i].eventClick += OnRowClicked;
+                    if (m_canSelect && !selectOnMouseEnter) m_rows[i].eventClick += OnRowClicked;
+                    else if (m_canSelect) m_rows[i].eventMouseEnter += OnRowClicked;
                 }
             }
             else if (m_rows.m_size > nbRows)
@@ -441,6 +483,21 @@ namespace AdvancedVehicleOptions.GUI
         {
             if (m_rowsData == null || m_rowHeight <= 0) return;
 
+            if (m_autoHideScrollbar)
+            {
+                bool isVisible = m_rowsData.m_size * m_rowHeight > height;
+                float newPanelWidth = isVisible ? width - 10f : width;
+                float newItemWidth = isVisible ? width - 20f : width;
+
+                m_panel.width = newPanelWidth;
+                for (int i = 0; i < m_rows.m_size; i++)
+                {
+                    m_rows[i].width = newItemWidth;
+                }
+
+                m_scrollbar.isVisible = isVisible;
+            }
+
             float H = m_rowHeight * m_rowsData.m_size;
             float scrollSize = height * height / (m_rowHeight * m_rowsData.m_size);
             float amount = stepSize * height / (m_rowHeight * m_rowsData.m_size);
@@ -449,6 +506,7 @@ namespace AdvancedVehicleOptions.GUI
             m_scrollbar.minValue = 0f;
             m_scrollbar.maxValue = height;
             m_scrollbar.incrementAmount = Mathf.Max(1f, amount);
+
             UpdateScrollPosition();
         }
 
@@ -512,14 +570,14 @@ namespace AdvancedVehicleOptions.GUI
             CheckRows();
 
             m_scrollbar.eventValueChanged += (c, t) =>
-                {
-                    if (m_lock || m_rowHeight <= 0) return;
+            {
+                if (m_lock || m_rowHeight <= 0) return;
 
-                    m_lock = true;
+                m_lock = true;
 
-                    listPosition = m_scrollbar.value * (m_rowsData.m_size - height / m_rowHeight) / (height - m_scrollbar.scrollSize - 1f);
-                    m_lock = false;
-                };
+                listPosition = m_scrollbar.value * (m_rowsData.m_size - height / m_rowHeight) / (height - m_scrollbar.scrollSize - 1f);
+                m_lock = false;
+            };
         }
         #endregion
     }

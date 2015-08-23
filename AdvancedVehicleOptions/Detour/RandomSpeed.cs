@@ -241,7 +241,7 @@ namespace AdvancedVehicleOptions.Detour
 
         private static float Randomize(float value, float percent, int seed)
         {
-            float step = value * percent / 100;
+            float step = value * percent / 100f;
 
             UnityEngine.Random.seed = seed;
             return UnityEngine.Random.Range(value - step, value + step);

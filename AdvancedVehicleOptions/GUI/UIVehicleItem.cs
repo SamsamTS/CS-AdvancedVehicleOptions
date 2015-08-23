@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ColossalFramework.UI;
+using ColossalFramework.Steamworks;
 
 namespace AdvancedVehicleOptions.GUI
 {
@@ -9,6 +10,7 @@ namespace AdvancedVehicleOptions.GUI
         private UISprite m_disabled;
         private UILabel m_name;
         private UIPanel m_background;
+        private UISprite m_steamIcon;
 
         private VehicleOptions m_options;
 
@@ -57,6 +59,22 @@ namespace AdvancedVehicleOptions.GUI
             m_name = AddUIComponent<UILabel>();
             m_name.textScale = 0.9f;
             m_name.relativePosition = new Vector3(55, 13);
+
+            m_steamIcon = AddUIComponent<UISprite>();
+            m_steamIcon.spriteName = "SteamWorkshop";
+            m_steamIcon.isVisible = false;
+            m_steamIcon.relativePosition = new Vector3(width - 45, 12.5f);
+
+            UIUtils.ResizeIcon(m_steamIcon, new Vector2(25, 25));
+
+            if (Steam.IsOverlayEnabled())
+            {
+                m_steamIcon.eventClick += (c, p) =>
+                {
+                    p.Use();
+                    Steam.ActivateGameOverlayToWorkshopItem(new PublishedFileId(ulong.Parse(m_options.steamID)));
+                };
+            }
         }
 
         protected override void OnClick(UIMouseEventParameter p)
@@ -81,6 +99,9 @@ namespace AdvancedVehicleOptions.GUI
 
             m_disabled.isVisible = !options.enabled;
             m_name.textColor = options.enabled ? new Color32(255, 255, 255, 255) : new Color32(128, 128, 128, 255);
+
+            m_steamIcon.tooltip = m_options.steamID;
+            m_steamIcon.isVisible = m_options.steamID != null;
 
             if (isRowOdd)
             {

@@ -284,10 +284,26 @@ namespace AdvancedVehicleOptions.GUI
             if (!m_initialized || m_options == null) return;
             m_initialized = false;
 
-            if (component == m_enabled && m_options.enabled != state)
+            if (component == m_enabled)
             {
-                m_options.enabled = state;
-                eventEnableCheckChanged(this, state);
+                if (m_options.isTrailer)
+                {
+                    VehicleOptions engine = m_options.engine;
+
+                    if (engine.enabled != state)
+                    {
+                        engine.enabled = state;
+                        eventEnableCheckChanged(this, state);
+                    }
+                }
+                else
+                {
+                    if (m_options.enabled != state)
+                    {
+                        m_options.enabled = state;
+                        eventEnableCheckChanged(this, state);
+                    }
+                }
             }
             else if (component == m_addBackEngine && m_options.addBackEngine != state)
             {

@@ -23,7 +23,7 @@ namespace AdvancedVehicleOptions.GUI
         private PreviewRenderer m_previewRenderer;
         private Color m_previewColor;
         private CameraController m_cameraController;
-        private int m_seekStart = -1;
+        private uint m_seekStart = 0;
 
         private const int HEIGHT = 550;
         private const int WIDTHLEFT = 470;
@@ -241,7 +241,7 @@ namespace AdvancedVehicleOptions.GUI
             // Event handlers
             m_fastList.eventSelectedIndexChanged += OnSelectedItemChanged; 
             m_optionPanel.eventEnableCheckChanged += OnEnableStateChanged;
-            m_reload.eventClick += (c, t) => AdvancedVehicleOptions.LoadConfig();
+            m_reload.eventClick += (c, t) => { AdvancedVehicleOptions.LoadConfig(); optionList = AdvancedVehicleOptions.config.options; };
             m_save.eventClick += (c, t) => AdvancedVehicleOptions.SaveConfig();
 
             panel.eventMouseDown += (c, p) =>
@@ -308,7 +308,8 @@ namespace AdvancedVehicleOptions.GUI
         {
             Array16<Vehicle> vehicles = VehicleManager.instance.m_vehicles;
             VehicleOptions options = m_optionPanel.m_options;
-            for (int i = m_seekStart + 1; i < vehicles.m_size; i++)
+
+            for (uint i = (m_seekStart + 1) % vehicles.m_size; i != m_seekStart; i = (i + 1) % vehicles.m_size)
             {
                 if (vehicles.m_buffer[i].Info == m_optionPanel.m_options.prefab)
                 {
@@ -331,127 +332,17 @@ namespace AdvancedVehicleOptions.GUI
 
                     m_cameraController.SetTarget(instanceID, ToolsModifierControl.cameraController.transform.position, false);
 
-                    //LogLaneNB((ushort)i);
-
-                    m_seekStart = i;
+                    m_seekStart = (i + 1) % vehicles.m_size;
                     return;
                 }
             }
-            m_seekStart = -1;
+            m_seekStart = 0;
         }
-
-        /*private void LogLaneNB(ushort vehicleID)
-        {
-            Vehicle vehicle = VehicleManager.instance.m_vehicles.m_buffer[(int)vehicleID];
-
-            PathUnit path = PathManager.instance.m_pathUnits.m_buffer[(int)vehicle.m_path];
-            uint laneID = PathManager.GetLaneID(path.GetPosition(vehicle.m_pathPositionIndex >> 1));
-
-            ushort segmentID = NetManager.instance.m_lanes.m_buffer[laneID].m_segment;
-            NetSegment segment = NetManager.instance.m_segments.m_buffer[segmentID];
-
-            uint currentLane = segment.m_lanes;
-
-            int lanePos = 0;
-            int forwardCount = 0;
-            int backwardCount = 0;
-
-            for (uint i = 0; currentLane != 0u; i++)
-            {
-                NetInfo.Lane lane = segment.Info.m_lanes[i];
-
-                if (lane.CheckType(NetInfo.LaneType.Vehicle, vehicle.Info.m_vehicleType))
-                {
-                    if (lane.m_direction == NetInfo.Direction.Forward)
-                    {
-                        forwardCount++;
-                        if (currentLane == laneID) lanePos = forwardCount;
-                    }
-                    if (lane.m_direction == NetInfo.Direction.Backward)
-                    {
-                        backwardCount++;
-                        if (currentLane == laneID) lanePos = -backwardCount;
-                    }
-                }
-                currentLane = NetManager.instance.m_lanes.m_buffer[(int)currentLane].m_nextLane;
-            }
-
-
-            int count = (lanePos > 0) ? forwardCount : backwardCount;
-            lanePos = Mathf.Abs(lanePos);
-
-            Debug.Log("Lane: " + lanePos + "/" + count + " " + segment.Info.name);
-        }*/
-
-        private void LogLaneNB(ushort vehicleID)
-        {
-            Vehicle vehicle = VehicleManager.instance.m_vehicles.m_buffer[(int)vehicleID];
-            PathUnit path = PathManager.instance.m_pathUnits.m_buffer[vehicle.m_path];
-
-            uint laneID = PathManager.GetLaneID(path.GetPosition(vehicle.m_pathPositionIndex >> 1));
-
-            ushort segmentID = NetManager.instance.m_lanes.m_buffer[laneID].m_segment;
-            NetSegment segment = NetManager.instance.m_segments.m_buffer[segmentID];
-
-            uint currentLane = segment.m_lanes;
-
-            int lanePos = 0;
-
-            while (currentLane != 0u && currentLane != laneID)
-            {
-                lanePos++;
-                currentLane = NetManager.instance.m_lanes.m_buffer[(int)currentLane].m_nextLane;
-            }
-
-            Debug.Log("Lane: " + lanePos);
-        }
-
-        /*private void LogLaneNB(ushort vehicleID)
-        {
-            Vehicle vehicle = VehicleManager.instance.m_vehicles.m_buffer[(int)vehicleID];
-
-            PathUnit path = PathManager.instance.m_pathUnits.m_buffer[(int)vehicle.m_path];
-            uint laneID = PathManager.GetLaneID(path.GetPosition(vehicle.m_pathPositionIndex >> 1));
-
-            ushort segmentID = NetManager.instance.m_lanes.m_buffer[laneID].m_segment;
-            NetSegment segment = NetManager.instance.m_segments.m_buffer[segmentID];
-
-            uint next = segment.m_lanes;
-            uint lanePos = 0;
-            uint count = 1;
-
-            while (next != 0u && next != laneID)
-            {
-                lanePos++;
-                next = NetManager.instance.m_lanes.m_buffer[(int)next].m_nextLane;
-            }
-
-            if (lanePos > 0)
-            {
-                NetInfo.Lane currentLane = segment.Info.m_lanes[lanePos];
-
-                next = segment.m_lanes;
-                uint i = 0;
-
-                while (next != 0u && next != laneID)
-                {
-                    NetInfo.Lane lane = segment.Info.m_lanes[i++];
-
-                    if (lane.m_direction == currentLane.m_direction && lane.CheckType(NetInfo.LaneType.Vehicle, vehicle.Info.m_vehicleType))
-                    {
-                        count++;
-                    }
-                    next = NetManager.instance.m_lanes.m_buffer[(int)next].m_nextLane;
-                }
-            }
-
-            Debug.Log("Lane: " + count);
-        }*/
 
         protected void OnSelectedItemChanged(UIComponent component, int i)
         {
             m_previewRenderer.mesh = null;
-            m_seekStart = -1;
+            m_seekStart = 0;
 
             VehicleOptions options = m_fastList.rowsData[i] as VehicleOptions;
 
