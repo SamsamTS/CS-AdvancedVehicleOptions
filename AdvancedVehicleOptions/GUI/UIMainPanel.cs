@@ -97,6 +97,7 @@ namespace AdvancedVehicleOptions.GUI
                 m_button = toolStrip.AddUIComponent<UISprite>();
                 m_button.spriteName = "IconCitizenVehicle";
                 m_button.size = m_button.spriteInfo.pixelSize;
+                m_button.tooltip = "Advanced Vehicle Options " + ModInfo.version;
                 m_button.relativePosition = new Vector3(0, 5);
 
                 view.FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
@@ -154,6 +155,7 @@ namespace AdvancedVehicleOptions.GUI
                 m_category.AddItem(categoryList[i]);
 
             m_category.selectedIndex = 0;
+            m_category.tooltip = "Select a category to display\nTip: Use the mouse wheel to switch between categories faster";
             m_category.relativePosition = label.relativePosition + new Vector3(70f, 0f);
 
             m_category.eventSelectedIndexChanged += (c, t) =>
@@ -168,6 +170,7 @@ namespace AdvancedVehicleOptions.GUI
             m_search.width = 150f;
             m_search.height = 30f;
             m_search.padding = new RectOffset(6, 6, 6, 6);
+            m_search.tooltip = "Type the name of a vehicle type";
             m_search.relativePosition = new Vector3(WIDTHLEFT - m_search.width, offset);
 
             m_search.eventTextChanged += (c, t) => PopulateList();
@@ -194,10 +197,12 @@ namespace AdvancedVehicleOptions.GUI
 
             m_reload = UIUtils.CreateButton(this);
             m_reload.text = "Reload";
+            m_reload.tooltip = "Discard any changes since the last time the configuration has been saved";
             m_reload.relativePosition = new Vector3(10, height - 40);
 
             m_save = UIUtils.CreateButton(this);
             m_save.text = "Save";
+            m_save.tooltip = "Save the configuration";
             m_save.relativePosition = new Vector3(105, height - 40);
 
             // Preview
@@ -223,6 +228,7 @@ namespace AdvancedVehicleOptions.GUI
                 m_followVehicle.spriteName = "LocationMarkerFocused";
                 m_followVehicle.width = m_followVehicle.spriteInfo.width;
                 m_followVehicle.height = m_followVehicle.spriteInfo.height;
+                m_followVehicle.tooltip = "Click here to cycle through the existing vehicles of that type";
                 m_followVehicle.relativePosition = new Vector3(panel.relativePosition.x + panel.width - m_followVehicle.width - 5, panel.relativePosition.y + 5);
 
                 m_followVehicle.eventClick += (c, p) => FollowNextVehicle();

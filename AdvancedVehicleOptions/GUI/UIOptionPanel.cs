@@ -101,6 +101,7 @@ namespace AdvancedVehicleOptions.GUI
             m_maxSpeed = UIUtils.CreateTextField(panel);
             m_maxSpeed.numericalOnly = true;
             m_maxSpeed.width = 75;
+            m_maxSpeed.tooltip = "Change the maximum speed of the vehicle\nPlease note that vehicles do not go beyond speed limits";
             m_maxSpeed.relativePosition = new Vector3(15, 35);
 
             UILabel kmh = panel.AddUIComponent<UILabel>();
@@ -118,6 +119,7 @@ namespace AdvancedVehicleOptions.GUI
             m_acceleration.numericalOnly = true;
             m_acceleration.allowFloats = true;
             m_acceleration.width = 60;
+            m_acceleration.tooltip = "Change the vehicle acceleration factor";
             m_acceleration.relativePosition = new Vector3(160, 35);
 
             // Braking
@@ -125,6 +127,7 @@ namespace AdvancedVehicleOptions.GUI
             m_braking.numericalOnly = true;
             m_braking.allowFloats = true;
             m_braking.width = 60;
+            m_braking.tooltip = "Change the vehicle braking factor";
             m_braking.relativePosition = new Vector3(230, 35);
 
             // Colors
@@ -132,6 +135,7 @@ namespace AdvancedVehicleOptions.GUI
             m_useColors.text = "Color variations:";
             m_useColors.isChecked = true;
             m_useColors.width = width - 40;
+            m_useColors.tooltip = "Enable color variations\nA random color is chosen between the four following colors";
             m_useColors.relativePosition = new Vector3(15, 70);
 
             m_color0 = UIUtils.CreateColorField(panel);
@@ -167,12 +171,14 @@ namespace AdvancedVehicleOptions.GUI
             m_enabled.text = "Allow this vehicle to spawn";
             m_enabled.isChecked = true;
             m_enabled.width = width - 40;
+            m_enabled.tooltip = "Make sure you have at least one vehicle allowed to spawn for that category";
             m_enabled.relativePosition = new Vector3(15, 155); ;
 
             m_addBackEngine = UIUtils.CreateCheckBox(panel);
             m_addBackEngine.text = "Replace last car with engine";
             m_addBackEngine.isChecked = false;
             m_addBackEngine.width = width - 40;
+            m_addBackEngine.tooltip = "Make the last car of this train be an engine";
             m_addBackEngine.relativePosition = new Vector3(15, 175);
 
             // Capacity
@@ -188,12 +194,14 @@ namespace AdvancedVehicleOptions.GUI
             m_capacity = UIUtils.CreateTextField(capacityPanel);
             m_capacity.numericalOnly = true;
             m_capacity.width = 110;
+            m_capacity.tooltip = "Change the capacity of the vehicle";
             m_capacity.relativePosition = new Vector3(0, 20);
 
             // Restore default
             m_restore = UIUtils.CreateButton(panel);
             m_restore.text = "Restore default";
             m_restore.width = 130;
+            m_restore.tooltip = "Restore all values to default";
             m_restore.relativePosition = new Vector3(160, 215);
 
             // Remove Vehicles
@@ -205,11 +213,13 @@ namespace AdvancedVehicleOptions.GUI
             m_clearVehicles = UIUtils.CreateButton(this);
             m_clearVehicles.text = "Driving";
             m_clearVehicles.width = 90f;
+            m_clearVehicles.tooltip = "Remove all driving vehicles of that type\nHold the SHIFT key to remove all types";
             m_clearVehicles.relativePosition = new Vector3(10, height - 40);
 
             m_clearParked = UIUtils.CreateButton(this);
             m_clearParked.text = "Parked";
             m_clearParked.width = 90f;
+            m_clearParked.tooltip = "Remove all parked vehicles of that type\nHold the SHIFT key to remove all types";
             m_clearParked.relativePosition = new Vector3(105, height - 40);
 
             panel.BringToFront();
