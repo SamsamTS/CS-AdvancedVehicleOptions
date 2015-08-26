@@ -71,50 +71,62 @@ namespace AdvancedVehicleOptions.GUI
 
             if (!AdvancedVehicleOptions.config.hideGUI)
             {
-                UIView view = GetUIView();
-
-                name = "AdvancedVehicleOptions";
-                backgroundSprite = "UnlockingPanel2";
-                isVisible = false;
-                canFocus = true;
-                isInteractive = true;
-                width = WIDTHLEFT + WIDTHRIGHT;
-                height = HEIGHT;
-                relativePosition = new Vector3(Mathf.Floor((view.fixedWidth - width) / 2), Mathf.Floor((view.fixedHeight - height) / 2));
-
-                // Get camera controller
-                GameObject go = GameObject.FindGameObjectWithTag("MainCamera");
-                if (go != null)
+                try
                 {
-                    m_cameraController = go.GetComponent<CameraController>();
-                }
+                    UIView view = GetUIView();
 
-                // Setting up UI
-                SetupControls();
+                    name = "AdvancedVehicleOptions";
+                    backgroundSprite = "UnlockingPanel2";
+                    isVisible = false;
+                    canFocus = true;
+                    isInteractive = true;
+                    width = WIDTHLEFT + WIDTHRIGHT;
+                    height = HEIGHT;
+                    relativePosition = new Vector3(Mathf.Floor((view.fixedWidth - width) / 2), Mathf.Floor((view.fixedHeight - height) / 2));
 
-                // Adding main button
-                UITabstrip toolStrip = view.FindUIComponent<UITabstrip>("MainToolstrip");
-                m_button = toolStrip.AddUIComponent<UISprite>();
-                m_button.spriteName = "IconCitizenVehicle";
-                m_button.size = m_button.spriteInfo.pixelSize;
-                m_button.tooltip = "Advanced Vehicle Options " + ModInfo.version;
-                m_button.relativePosition = new Vector3(0, 5);
-
-                view.FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
-
-                m_button.eventClick += new MouseEventHandler((c, p) =>
-                {
-                    if (p != null) p.Use();
-                    isVisible = !isVisible;
-                    if (isVisible)
+                    // Get camera controller
+                    GameObject go = GameObject.FindGameObjectWithTag("MainCamera");
+                    if (go != null)
                     {
-                        m_fastList.DisplayAt(m_fastList.listPosition);
-                        m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
-                        m_preview.parent.isVisible = true;
+                        m_cameraController = go.GetComponent<CameraController>();
                     }
-                });
 
-                optionList = AdvancedVehicleOptions.config.options;
+                    // Setting up UI
+                    SetupControls();
+
+                    // Adding main button
+                    UITabstrip toolStrip = view.FindUIComponent<UITabstrip>("MainToolstrip");
+                    m_button = toolStrip.AddUIComponent<UISprite>();
+                    m_button.spriteName = "IconCitizenVehicle";
+                    m_button.size = m_button.spriteInfo.pixelSize;
+                    m_button.tooltip = "Advanced Vehicle Options " + ModInfo.version;
+                    m_button.relativePosition = new Vector3(0, 5);
+
+                    view.FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
+
+                    m_button.eventClick += new MouseEventHandler((c, p) =>
+                    {
+                        if (p != null) p.Use();
+                        isVisible = !isVisible;
+                        if (isVisible)
+                        {
+                            m_fastList.DisplayAt(m_fastList.listPosition);
+                            m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
+                            m_preview.parent.isVisible = true;
+                        }
+                    });
+
+                    optionList = AdvancedVehicleOptions.config.options;
+                }
+                catch(Exception e)
+                {
+                    DebugUtils.Log("UI initialization failed.");
+                    Debug.LogException(e);
+
+                    if (m_button != null) GameObject.Destroy(m_button.gameObject);
+
+                    GameObject.Destroy(gameObject);
+                }
             }
             else
             {

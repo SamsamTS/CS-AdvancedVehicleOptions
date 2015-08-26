@@ -76,6 +76,8 @@ namespace AdvancedVehicleOptions
                     {
                         for (uint i = 0; i < m_prefab.m_trailers.Length; i++)
                         {
+                            if (m_prefab.m_trailers[i].m_info == null) continue;
+
                             placement = DefaultOptions.GetPlacementStyle(m_prefab.m_trailers[i].m_info);
                             m_prefab.m_trailers[i].m_info.m_placementStyle = (int)placement != -1 ? placement : m_placementStyle;
                         }
@@ -88,7 +90,11 @@ namespace AdvancedVehicleOptions
                     if (hasTrailer)
                     {
                         for (uint i = 0; i < m_prefab.m_trailers.Length; i++)
+                        {
+                            if (m_prefab.m_trailers[i].m_info == null) continue;
+
                             m_prefab.m_trailers[i].m_info.m_placementStyle = ItemClass.Placement.Manual;
+                        }
                     }
                 }
 

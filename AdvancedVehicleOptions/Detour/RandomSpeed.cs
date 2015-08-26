@@ -17,7 +17,6 @@ namespace AdvancedVehicleOptions.Detour
         private static uint[] _lastLaneIDs;
         private static NetInfo[] _highways;
 
-        private static VehicleManager _vehicleManager;
         private static PathManager _pathManager;
         private static NetManager _netManager;
 
@@ -74,7 +73,6 @@ namespace AdvancedVehicleOptions.Detour
                 }
             }
 
-            _vehicleManager = VehicleManager.instance;
             _pathManager = PathManager.instance;
             _netManager = NetManager.instance;
 
@@ -110,7 +108,7 @@ namespace AdvancedVehicleOptions.Detour
                         if (prefab == null) continue;
                         Type aiType = prefab.m_vehicleAI.GetType();
 
-                        if (prefab.m_vehicleAI is VehicleAI && !_CalculateTargetSpeed.ContainsKey(aiType))
+                        if (prefab.m_vehicleAI is CarAI && !_CalculateTargetSpeed.ContainsKey(aiType))
                         {
                             Redirection redirect = new Redirection();
                             redirect.original = aiType.GetMethod("CalculateTargetSpeed", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -183,11 +181,11 @@ namespace AdvancedVehicleOptions.Detour
                 if (!highwaySpeed)
                 {
                     _lastFactor = _factors[vehicleID];
-                    return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed) * _factors[vehicleID];
+                    return Mathf.Min(Mathf.Min(a, b), this.m_info.m_maxSpeed) * _lastFactor;
                 }
 
                 // Highway Speeds :
-                uint laneID = PathManager.GetLaneID(_pathManager.m_pathUnits.m_buffer[_vehicleManager.m_vehicles.m_buffer[(int)vehicleID].m_path].GetPosition(_vehicleManager.m_vehicles.m_buffer[(int)vehicleID].m_pathPositionIndex >> 1));
+                uint laneID = PathManager.GetLaneID(_pathManager.m_pathUnits.m_buffer[data.m_path].GetPosition(data.m_pathPositionIndex >> 1));
 
                 if (laneID != 0)
                 {

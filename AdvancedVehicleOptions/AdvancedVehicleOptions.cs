@@ -80,7 +80,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.4.0";
+        public const string version = "1.4.1";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -175,9 +175,11 @@ namespace AdvancedVehicleOptions
                 }
                 catch
                 {
-                    DebugUtils.Warning("A new version of the mod has been installed." + Environment.NewLine +
-                        "The game must be exited completely for changes to take effect." + Environment.NewLine +
-                        "Until then the mod is disabled.");
+                    DebugUtils.Log("Could not create UIMainPanel");
+
+                    if (m_gameObject != null)
+                        GameObject.Destroy(m_gameObject);
+
                     return;
                 }
 
@@ -185,6 +187,8 @@ namespace AdvancedVehicleOptions
             }
             catch (Exception e)
             {
+                if (m_gameObject != null)
+                    GameObject.Destroy(m_gameObject);
                 Debug.LogException(e);
             }
         }

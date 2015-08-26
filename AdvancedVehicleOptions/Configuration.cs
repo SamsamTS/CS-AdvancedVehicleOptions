@@ -76,9 +76,11 @@ namespace AdvancedVehicleOptions
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(Configuration));
             Configuration config = null;
 
+            options = null;
+            data = null;
+
             try
             {
-                if (AdvancedVehicleOptions.isGameLoaded) ConvertItems();
                 // Trying to Deserialize the configuration file
                 using (FileStream stream = new FileStream(filename, FileMode.Open))
                 {
