@@ -64,7 +64,7 @@ namespace AdvancedVehicleOptions
             }
             set
             {
-                if (m_prefab == null) return;
+                if (m_prefab == null || enabled == value) return;
 
                 if (value)
                 {
@@ -98,8 +98,11 @@ namespace AdvancedVehicleOptions
                     }
                 }
 
+                // Refresh Transfer Vehicles
+                m_refreshTransferVehicles.Invoke(VehicleManager.instance, null);
+
                 // Make transfer vehicles dirty
-                m_transferVehiclesDirty.SetValue(Singleton<VehicleManager>.instance, true);
+                //m_transferVehiclesDirty.SetValue(VehicleManager.instance, true);
             }
         }
         // addBackEngine
@@ -297,7 +300,8 @@ namespace AdvancedVehicleOptions
 
         public static VehicleInfo prefabUpdateUnits = null;
         public static VehicleInfo prefabUpdateEngine = null;
-        private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static MethodInfo m_refreshTransferVehicles = typeof(VehicleManager).GetMethod("RefreshTransferVehicles", BindingFlags.Instance | BindingFlags.NonPublic);
+        //private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private VehicleInfo m_prefab = null;
         private VehicleInfo m_engine = null;
@@ -415,7 +419,7 @@ namespace AdvancedVehicleOptions
             int count = 0;
             while (unitID != 0)
             {
-                CitizenUnit unit = Singleton<CitizenManager>.instance.m_units.m_buffer[unitID];
+                CitizenUnit unit = CitizenManager.instance.m_units.m_buffer[unitID];
                 unitID = unit.m_nextUnit;
                 count++;
             }
@@ -425,7 +429,7 @@ namespace AdvancedVehicleOptions
         public static IEnumerator UpdateCapacityUnits(ThreadBase t)
         {
             int count = 0;
-            Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
+            Array16<Vehicle> vehicles = VehicleManager.instance.m_vehicles;
             for (int i = 0; i < vehicles.m_size; i++)
             {
                 if (prefabUpdateUnits == null || vehicles.m_buffer[i].Info == prefabUpdateUnits)
@@ -434,7 +438,7 @@ namespace AdvancedVehicleOptions
 
                     if (capacity != -1)
                     {
-                        CitizenUnit[] units = Singleton<CitizenManager>.instance.m_units.m_buffer;
+                        CitizenUnit[] units = CitizenManager.instance.m_units.m_buffer;
                         uint unit = vehicles.m_buffer[i].m_citizenUnits;
 
                         int currentUnitCount = GetTotalUnitGroups(unit);
@@ -448,7 +452,7 @@ namespace AdvancedVehicleOptions
                             for (int j = 1; j < newUnitCount; j++)
                                 n = units[n].m_nextUnit;
                             // Releasing units excess
-                            Singleton<CitizenManager>.instance.ReleaseUnits(units[n].m_nextUnit);
+                            CitizenManager.instance.ReleaseUnits(units[n].m_nextUnit);
                             units[n].m_nextUnit = 0;
 
                             count++;
@@ -463,7 +467,7 @@ namespace AdvancedVehicleOptions
 
                             // Creating missing units
                             int newCapacity = capacity - currentUnitCount * 5;
-                            Singleton<CitizenManager>.instance.CreateUnits(out units[n].m_nextUnit, ref Singleton<SimulationManager>.instance.m_randomizer, 0, (ushort)i, 0, 0, 0, newCapacity, 0);
+                            CitizenManager.instance.CreateUnits(out units[n].m_nextUnit, ref SimulationManager.instance.m_randomizer, 0, (ushort)i, 0, 0, 0, newCapacity, 0);
 
                             count++;
                         }
@@ -478,7 +482,7 @@ namespace AdvancedVehicleOptions
 
         public static IEnumerator UpdateBackEngines(ThreadBase t)
         {
-            Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
+            Array16<Vehicle> vehicles = VehicleManager.instance.m_vehicles;
             for (ushort i = 0; i < vehicles.m_size; i++)
             {
                 VehicleInfo prefab = vehicles.m_buffer[i].Info;

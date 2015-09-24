@@ -80,7 +80,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.4.1";
+        public const string version = "1.4.3";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -339,15 +339,14 @@ namespace AdvancedVehicleOptions
 
         public static IEnumerator ActionRemoveExisting(ThreadBase t)
         {
-            VehicleManager vehicleManager =  Singleton<VehicleManager>.instance;
             VehicleInfo info = m_removeInfo;
-            
-            for (ushort i = 0; i < vehicleManager.m_vehicles.m_size; i++)
+
+            for (ushort i = 0; i < VehicleManager.instance.m_vehicles.m_size; i++)
             {
-                if (vehicleManager.m_vehicles.m_buffer[i].Info != null)
+                if (VehicleManager.instance.m_vehicles.m_buffer[i].Info != null)
                 {
-                    if (info == vehicleManager.m_vehicles.m_buffer[i].Info)
-                        vehicleManager.ReleaseVehicle(i);
+                    if (info == VehicleManager.instance.m_vehicles.m_buffer[i].Info)
+                        VehicleManager.instance.ReleaseVehicle(i);
                 }
 
                 if (i % 256 == 255) yield return i;
@@ -356,15 +355,14 @@ namespace AdvancedVehicleOptions
 
         public static IEnumerator ActionRemoveParked(ThreadBase t)
         {
-            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
             VehicleInfo info = m_removeParkedInfo;
 
-            for (ushort i = 0; i < vehicleManager.m_parkedVehicles.m_size; i++)
+            for (ushort i = 0; i < VehicleManager.instance.m_parkedVehicles.m_size; i++)
             {
-                if (vehicleManager.m_parkedVehicles.m_buffer[i].Info != null)
+                if (VehicleManager.instance.m_parkedVehicles.m_buffer[i].Info != null)
                 {
-                    if (info == vehicleManager.m_parkedVehicles.m_buffer[i].Info)
-                        vehicleManager.ReleaseParkedVehicle(i);
+                    if (info == VehicleManager.instance.m_parkedVehicles.m_buffer[i].Info)
+                        VehicleManager.instance.ReleaseParkedVehicle(i);
                 }
 
                 if (i % 256 == 255) yield return i;
@@ -373,28 +371,26 @@ namespace AdvancedVehicleOptions
 
         public static IEnumerator ActionRemoveExistingAll(ThreadBase t)
         {
-            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
-
-            for (ushort i = 0; i < vehicleManager.m_vehicles.m_size; i++)
+            for (ushort i = 0; i < VehicleManager.instance.m_vehicles.m_size; i++)
             {
-                vehicleManager.ReleaseVehicle(i);
+                VehicleManager.instance.ReleaseVehicle(i);
                 if (i % 256 == 255) yield return i;
             }
         }
 
         public static IEnumerator ActionRemoveParkedAll(ThreadBase t)
         {
-            VehicleManager vehicleManager = Singleton<VehicleManager>.instance;
-
-            for (ushort i = 0; i < vehicleManager.m_parkedVehicles.m_size; i++)
+            for (ushort i = 0; i < VehicleManager.instance.m_parkedVehicles.m_size; i++)
             {
-                vehicleManager.ReleaseParkedVehicle(i);
+                VehicleManager.instance.ReleaseParkedVehicle(i);
                 if (i % 256 == 255) yield return i;
             }
         }
 
         private static int ParseVersion(string version)
         {
+            if (version.IsNullOrWhiteSpace()) return 0;
+
             int v = 0;
             string[] t = version.Split('.');
 
@@ -516,131 +512,178 @@ namespace AdvancedVehicleOptions
 
         private IEnumerator BrokenAssetsFix(ThreadBase t)
         {
-            uint brokenCount = 0;
-            uint confusedCount = 0;
+            SimulationManager.instance.ForcedSimulationPaused = true;
 
-            // Fix broken vehicles
-            Array16<Vehicle> vehicles = Singleton<VehicleManager>.instance.m_vehicles;
-            for (int i = 0; i < vehicles.m_size; i++)
+            try
             {
-                if (vehicles.m_buffer[i].m_flags != Vehicle.Flags.None)
+                uint brokenCount = 0;
+                uint confusedCount = 0;
+
+                // Fix broken offers
+                TransferManager.TransferOffer[] incomingOffers = typeof(TransferManager).GetField("m_incomingOffers", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as TransferManager.TransferOffer[];
+                TransferManager.TransferOffer[] outgoingOffers = typeof(TransferManager).GetField("m_outgoingOffers", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as TransferManager.TransferOffer[];
+
+                ushort[] incomingCount = typeof(TransferManager).GetField("m_incomingCount", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as ushort[];
+                ushort[] outgoingCount = typeof(TransferManager).GetField("m_outgoingCount", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as ushort[];
+
+                int[] incomingAmount = typeof(TransferManager).GetField("m_incomingAmount", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as int[];
+                int[] outgoingAmount = typeof(TransferManager).GetField("m_outgoingAmount", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as int[];
+
+                // Based on TransferManager.RemoveAllOffers
+                for (int i = 0; i < 64; i++)
                 {
-                    bool exists = (vehicles.m_buffer[i].m_flags & Vehicle.Flags.Spawned) != Vehicle.Flags.None;
-
-                    // Vehicle validity
-                    InstanceID target;
-                    bool isInfoNull = vehicles.m_buffer[i].Info == null;
-                    bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0;
-                    bool isWaiting = !exists && (vehicles.m_buffer[i].m_flags & Vehicle.Flags.WaitingSpace) != Vehicle.Flags.None;  
-                    bool isConfused = exists && isLeading && !isInfoNull && vehicles.m_buffer[i].Info.m_vehicleAI.GetLocalizedStatus((ushort)i, ref vehicles.m_buffer[i], out target) == Locale.Get("VEHICLE_STATUS_CONFUSED");
-                    bool isSingleTrailer = false;
-
-                    if (exists && !isInfoNull && isLeading && !isConfused && !isWaiting)
+                    for (int j = 0; j < 8; j++)
                     {
-                        VehicleOptions options = new VehicleOptions();
-                        options.SetPrefab(vehicles.m_buffer[i].Info);
-                        isSingleTrailer = options.isTrailer && vehicles.m_buffer[i].m_trailingVehicle == 0;
+                        int num = i * 8 + j;
+                        int num2 = (int)incomingCount[num];
+                        for (int k = num2 - 1; k >= 0; k--)
+                        {
+                            int num3 = num * 256 + k;
+                            if (IsInfoNull(incomingOffers[num3]))
+                            {
+                                incomingAmount[i] -= incomingOffers[num3].Amount;
+                                incomingOffers[num3] = incomingOffers[--num2];
+                                brokenCount++;
+                            }
+                        }
+                        incomingCount[num] = (ushort)num2;
+                        int num4 = (int)outgoingCount[num];
+                        for (int l = num4 - 1; l >= 0; l--)
+                        {
+                            int num5 = num * 256 + l;
+                            if (IsInfoNull(outgoingOffers[num5]))
+                            {
+                                outgoingAmount[i] -= outgoingOffers[num5].Amount;
+                                outgoingOffers[num5] = outgoingOffers[--num4];
+                                brokenCount++;
+                            }
+                        }
+                        outgoingCount[num] = (ushort)num4;
                     }
 
-                    if (isInfoNull || isSingleTrailer || isWaiting || isConfused)
+                    yield return i;
+                }
+
+                if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken transfer offers.");
+
+                // Fix broken vehicles
+                Array16<Vehicle> vehicles = VehicleManager.instance.m_vehicles;
+                for (int i = 0; i < vehicles.m_size; i++)
+                {
+                    if (vehicles.m_buffer[i].m_flags != Vehicle.Flags.None)
+                    {
+                        bool exists = (vehicles.m_buffer[i].m_flags & Vehicle.Flags.Spawned) != Vehicle.Flags.None;
+
+                        // Vehicle validity
+                        InstanceID target;
+                        bool isInfoNull = vehicles.m_buffer[i].Info == null;
+                        bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0;
+                        bool isWaiting = !exists && (vehicles.m_buffer[i].m_flags & Vehicle.Flags.WaitingSpace) != Vehicle.Flags.None;
+                        bool isConfused = exists && isLeading && !isInfoNull && vehicles.m_buffer[i].Info.m_vehicleAI.GetLocalizedStatus((ushort)i, ref vehicles.m_buffer[i], out target) == Locale.Get("VEHICLE_STATUS_CONFUSED");
+                        bool isSingleTrailer = false;
+
+                        if (exists && !isInfoNull && isLeading && !isConfused && !isWaiting)
+                        {
+                            VehicleOptions options = new VehicleOptions();
+                            options.SetPrefab(vehicles.m_buffer[i].Info);
+                            isSingleTrailer = options.isTrailer && vehicles.m_buffer[i].m_trailingVehicle == 0;
+                        }
+
+                        if (isInfoNull || isSingleTrailer || isWaiting || isConfused)
+                        {
+                            try
+                            {
+                                VehicleManager.instance.ReleaseVehicle((ushort)i);
+                                if (isInfoNull) brokenCount++;
+                                if (isConfused) confusedCount++;
+                            }
+                            catch { }
+                        }
+                    }
+                    if (i % 256 == 255) yield return i;
+                }
+
+                if (confusedCount > 0) DebugUtils.Log("Removed " + confusedCount + " confused vehicle instances.");
+
+                Array16<VehicleParked> vehiclesParked = VehicleManager.instance.m_parkedVehicles;
+                for (int i = 0; i < vehiclesParked.m_size; i++)
+                {
+                    if (vehiclesParked.m_buffer[i].Info == null)
                     {
                         try
                         {
-                            Singleton<VehicleManager>.instance.ReleaseVehicle((ushort)i);
-                            if (isInfoNull) brokenCount++;
-                            if (isConfused) confusedCount++;
+                            VehicleManager.instance.ReleaseParkedVehicle((ushort)i);
+                            brokenCount++;
                         }
                         catch { }
                     }
+                    if (i % 256 == 255) yield return i;
                 }
-                if (i % 256 == 255) yield return i;
-            }
 
-            if (confusedCount > 0) DebugUtils.Log("Removed " + confusedCount + " confused vehicle instances.");
+                if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken vehicle instances.");
+                brokenCount = 0;
 
-            Array16<VehicleParked> vehiclesParked = Singleton<VehicleManager>.instance.m_parkedVehicles;
-            for (int i = 0; i < vehiclesParked.m_size; i++)
-            {
-                if (vehiclesParked.m_buffer[i].Info == null)
+                // Fix broken buildings
+                Array16<Building> buildings = BuildingManager.instance.m_buildings;
+                for (int i = 0; i < buildings.m_size; i++)
                 {
-                    try
+                    if (buildings.m_buffer[i].Info == null)
                     {
-                        Singleton<VehicleManager>.instance.ReleaseParkedVehicle((ushort)i);
-                        brokenCount++;
-                    }
-                    catch { }
-                }
-                if (i % 256 == 255) yield return i;
-            }
-
-            if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken vehicle instances.");
-            brokenCount = 0;
-
-            // Fix broken buildings
-            Array16<Building> buildings = Singleton<BuildingManager>.instance.m_buildings;
-            for (int i = 0; i < buildings.m_size; i++)
-            {
-                if (buildings.m_buffer[i].Info == null)
-                {
-                    try
-                    {
-                        Singleton<BuildingManager>.instance.ReleaseBuilding((ushort)i);
-                        brokenCount++;
-                    }
-                    catch { }
-                }
-                if (i % 256 == 255) yield return i;
-            }
-
-            if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken building instances.");
-            brokenCount = 0;
-
-            // Fix broken offers
-            TransferManager.TransferOffer[] incomingOffers = typeof(TransferManager).GetField("m_incomingOffers", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as TransferManager.TransferOffer[];
-            TransferManager.TransferOffer[] outgoingOffers = typeof(TransferManager).GetField("m_outgoingOffers", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as TransferManager.TransferOffer[];
-
-            ushort[] incomingCount = typeof(TransferManager).GetField("m_incomingCount", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as ushort[];
-            ushort[] outgoingCount = typeof(TransferManager).GetField("m_outgoingCount", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as ushort[];
-
-            int[] incomingAmount = typeof(TransferManager).GetField("m_incomingAmount", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as int[];
-            int[] outgoingAmount = typeof(TransferManager).GetField("m_outgoingAmount", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(TransferManager.instance) as int[];
-
-            // Based on TransferManager.RemoveAllOffers
-            for (int i = 0; i < 64; i++)
-            {
-                for (int j = 0; j < 8; j++)
-                {
-                    int num = i * 8 + j;
-                    int num2 = (int)incomingCount[num];
-                    for (int k = num2 - 1; k >= 0; k--)
-                    {
-                        int num3 = num * 256 + k;
-                        if (IsInfoNull(incomingOffers[num3]))
+                        try
                         {
-                            incomingAmount[i] -= incomingOffers[num3].Amount;
-                            incomingOffers[num3] = incomingOffers[--num2];
+                            BuildingManager.instance.ReleaseBuilding((ushort)i);
                             brokenCount++;
                         }
+                        catch { }
                     }
-                    incomingCount[num] = (ushort)num2;
-                    int num4 = (int)outgoingCount[num];
-                    for (int l = num4 - 1; l >= 0; l--)
-                    {
-                        int num5 = num * 256 + l;
-                        if (IsInfoNull(outgoingOffers[num5]))
-                        {
-                            outgoingAmount[i] -= outgoingOffers[num5].Amount;
-                            outgoingOffers[num5] = outgoingOffers[--num4];
-                            brokenCount++;
-                        }
-                    }
-                    outgoingCount[num] = (ushort)num4;
+                    if (i % 256 == 255) yield return i;
                 }
 
-                yield return i;
-            }
+                if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken building instances.");
+                brokenCount = 0;
 
-            if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken transfer offers.");
+                // Fix broken props
+                Array16<PropInstance> props = PropManager.instance.m_props;
+                for (int i = 0; i < props.m_size; i++)
+                {
+                    if (props.m_buffer[i].Info == null)
+                    {
+                        try
+                        {
+                            PropManager.instance.ReleaseProp((ushort)i);
+                            brokenCount++;
+                        }
+                        catch { }
+                    }
+                    if (i % 256 == 255) yield return i;
+                }
+
+                if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken prop instances.");
+                brokenCount = 0;
+
+                // Fix broken trees
+                Array32<TreeInstance> trees = TreeManager.instance.m_trees;
+                for (int i = 0; i < trees.m_size; i++)
+                {
+                    if (trees.m_buffer[i].Info == null)
+                    {
+                        try
+                        {
+                            TreeManager.instance.ReleaseTree((ushort)i);
+                            brokenCount++;
+                        }
+                        catch { }
+                    }
+                    if (i % 256 == 255) yield return i;
+                }
+
+                if (brokenCount > 0) DebugUtils.Log("Removed " + brokenCount + " broken tree instances.");
+                brokenCount = 0;
+            }
+            finally
+            {
+                SimulationManager.instance.ForcedSimulationPaused = false;
+            }
         }
 
         private static bool IsInfoNull(TransferManager.TransferOffer offer)

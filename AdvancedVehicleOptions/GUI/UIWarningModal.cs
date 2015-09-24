@@ -14,8 +14,6 @@ namespace AdvancedVehicleOptions.GUI
 
         private string m_message;
 
-        private bool m_simulationState;
-
         private static UIWarningModal _instance;
 
         public static UIWarningModal instance
@@ -121,8 +119,7 @@ namespace AdvancedVehicleOptions.GUI
 
             if (isVisible)
             {
-                m_simulationState = SimulationManager.instance.SimulationPaused;
-                SimulationManager.instance.SimulationPaused = true;
+                SimulationManager.instance.ForcedSimulationPaused = true;
 
                 Focus();
                 modalEffect.Show(false);
@@ -133,7 +130,7 @@ namespace AdvancedVehicleOptions.GUI
             }
             else
             {
-                SimulationManager.instance.SimulationPaused = m_simulationState;
+                SimulationManager.instance.ForcedSimulationPaused = false;
 
                 ValueAnimator.Animate("NewThemeModalEffect", delegate(float val)
                 {
