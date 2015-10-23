@@ -80,7 +80,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.4.3";
+        public const string version = "1.4.5";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -183,7 +183,7 @@ namespace AdvancedVehicleOptions
                     return;
                 }
 
-                new EnumerableActionThread(BrokenAssetsFix);
+                //new EnumerableActionThread(BrokenAssetsFix);
             }
             catch (Exception e)
             {
@@ -510,7 +510,7 @@ namespace AdvancedVehicleOptions
                 type != typeof(PoliceCarAI));
         }
 
-        private IEnumerator BrokenAssetsFix(ThreadBase t)
+        /*private IEnumerator BrokenAssetsFix(ThreadBase t)
         {
             SimulationManager.instance.ForcedSimulationPaused = true;
 
@@ -697,6 +697,6 @@ namespace AdvancedVehicleOptions
                 return BuildingManager.instance.m_buildings.m_buffer[offer.Building].Info == null;
 
             return false;
-        }
+        }*/
     }
 }

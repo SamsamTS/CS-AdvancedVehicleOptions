@@ -32,13 +32,13 @@ namespace AdvancedVehicleOptions.GUI
         public static readonly string[] categoryList = { "All", "Citizen",
             "Forestry", "Farming", "Ore", "Oil", "Industry",
             "Police", "FireSafety", "Healthcare", "Deathcare", "Garbage",
-            "Bus", "Metro", "Cargo Train", "Passenger Train",
+            "Taxi", "Bus", "Metro", "Cargo Train", "Passenger Train",
             "Cargo Ship", "Passenger Ship", "Plane" };
 
         public static readonly string[] vehicleIconList = { "IconCitizenVehicle",
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
               "ToolbarIconPolice", "InfoIconFireSafety", "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage",
-              "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "IconServiceVehicle", "SubBarPublicTransportTrain",
+              "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "IconServiceVehicle", "SubBarPublicTransportTrain",
               "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane" };
 
         public UIOptionPanel optionPanel
@@ -66,9 +66,9 @@ namespace AdvancedVehicleOptions.GUI
             AdvancedVehicleOptions.LoadConfig();
 
             // Random Speed
+            Detour.RandomSpeed.activated = true;
             if (Detour.RandomSpeed.enabled)
             {
-                Detour.RandomSpeed.activated = true;
                 Detour.RandomSpeed.Intitialize();
             }
 
@@ -317,6 +317,7 @@ namespace AdvancedVehicleOptions.GUI
 
             m_optionPanel.isVisible = m_fastList.rowsData.m_size > 0;
             m_preview.parent.isVisible = m_optionPanel.isVisible;
+            m_followVehicle.isVisible = m_optionPanel.isVisible;
         }
 
         private void FollowNextVehicle()

@@ -29,6 +29,7 @@ namespace AdvancedVehicleOptions
             Healthcare,
             Deathcare,
             Garbage,
+            TransportTaxi,
             TransportBus,
             TransportMetro,
             CargoTrain,
@@ -136,7 +137,7 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_maxSpeed; }
             set
             {
-                if (m_prefab == null) return;
+                if (m_prefab == null || value <= 0) return;
                 m_prefab.m_maxSpeed = value;
             }
         }
@@ -146,7 +147,7 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_acceleration; }
             set
             {
-                if (m_prefab == null) return;
+                if (m_prefab == null || value <= 0) return;
                 m_prefab.m_acceleration = value;
             }
         }
@@ -156,7 +157,7 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_braking; }
             set
             {
-                if (m_prefab == null) return;
+                if (m_prefab == null || value <= 0) return;
                 m_prefab.m_braking = value;
             }
         }
@@ -251,6 +252,9 @@ namespace AdvancedVehicleOptions
                 ai = m_vehicleAI as PoliceCarAI;
                 if (ai != null) return ((PoliceCarAI)ai).m_crimeCapacity;
 
+                ai = m_vehicleAI as TaxiAI;
+                if (ai != null) return ((TaxiAI)ai).m_passengerCapacity;
+
                 return -1;
             }
             set
@@ -294,6 +298,9 @@ namespace AdvancedVehicleOptions
 
                 ai = m_vehicleAI as PoliceCarAI;
                 if (ai != null) { ((PoliceCarAI)ai).m_crimeCapacity = value; return; }
+
+                ai = m_vehicleAI as TaxiAI;
+                if (ai != null) { ((TaxiAI)ai).m_passengerCapacity = value; return; }
             }
         }
         #endregion
@@ -432,44 +439,47 @@ namespace AdvancedVehicleOptions
             Array16<Vehicle> vehicles = VehicleManager.instance.m_vehicles;
             for (int i = 0; i < vehicles.m_size; i++)
             {
-                if (prefabUpdateUnits == null || vehicles.m_buffer[i].Info == prefabUpdateUnits)
+                if ((vehicles.m_buffer[i].m_flags & Vehicle.Flags.Spawned) != Vehicle.Flags.None)
                 {
-                    int capacity = GetUnitsCapacity(vehicles.m_buffer[i].Info.m_vehicleAI);
-
-                    if (capacity != -1)
+                    if (prefabUpdateUnits == null || vehicles.m_buffer[i].Info == prefabUpdateUnits)
                     {
-                        CitizenUnit[] units = CitizenManager.instance.m_units.m_buffer;
-                        uint unit = vehicles.m_buffer[i].m_citizenUnits;
+                        int capacity = GetUnitsCapacity(vehicles.m_buffer[i].Info.m_vehicleAI);
 
-                        int currentUnitCount = GetTotalUnitGroups(unit);
-                        int newUnitCount = Mathf.CeilToInt(capacity / 5f);
-
-                        // Capacity reduced
-                        if (newUnitCount < currentUnitCount)
+                        if (capacity != -1)
                         {
-                            // Get the first unit to remove
-                            uint n = unit;
-                            for (int j = 1; j < newUnitCount; j++)
-                                n = units[n].m_nextUnit;
-                            // Releasing units excess
-                            CitizenManager.instance.ReleaseUnits(units[n].m_nextUnit);
-                            units[n].m_nextUnit = 0;
+                            CitizenUnit[] units = CitizenManager.instance.m_units.m_buffer;
+                            uint unit = vehicles.m_buffer[i].m_citizenUnits;
 
-                            count++;
-                        }
-                        // Capacity increased
-                        else if (newUnitCount > currentUnitCount)
-                        {
-                            // Get the last unit
-                            uint n = unit;
-                            while (units[n].m_nextUnit != 0)
-                                n = units[n].m_nextUnit;
+                            int currentUnitCount = GetTotalUnitGroups(unit);
+                            int newUnitCount = Mathf.CeilToInt(capacity / 5f);
 
-                            // Creating missing units
-                            int newCapacity = capacity - currentUnitCount * 5;
-                            CitizenManager.instance.CreateUnits(out units[n].m_nextUnit, ref SimulationManager.instance.m_randomizer, 0, (ushort)i, 0, 0, 0, newCapacity, 0);
+                            // Capacity reduced
+                            if (newUnitCount < currentUnitCount)
+                            {
+                                // Get the first unit to remove
+                                uint n = unit;
+                                for (int j = 1; j < newUnitCount; j++)
+                                    n = units[n].m_nextUnit;
+                                // Releasing units excess
+                                CitizenManager.instance.ReleaseUnits(units[n].m_nextUnit);
+                                units[n].m_nextUnit = 0;
 
-                            count++;
+                                count++;
+                            }
+                            // Capacity increased
+                            else if (newUnitCount > currentUnitCount)
+                            {
+                                // Get the last unit
+                                uint n = unit;
+                                while (units[n].m_nextUnit != 0)
+                                    n = units[n].m_nextUnit;
+
+                                // Creating missing units
+                                int newCapacity = capacity - currentUnitCount * 5;
+                                CitizenManager.instance.CreateUnits(out units[n].m_nextUnit, ref SimulationManager.instance.m_randomizer, 0, (ushort)i, 0, 0, 0, newCapacity, 0);
+
+                                count++;
+                            }
                         }
                     }
                 }
@@ -589,6 +599,8 @@ namespace AdvancedVehicleOptions
                         return Category.TransportShip;
                     else
                         return Category.CargoShip;
+                case ItemClass.SubService.PublicTransportTaxi:
+                    return Category.TransportTaxi;
                 case ItemClass.SubService.PublicTransportPlane:
                     return Category.TransportPlane;
                 case ItemClass.SubService.IndustrialForestry:
