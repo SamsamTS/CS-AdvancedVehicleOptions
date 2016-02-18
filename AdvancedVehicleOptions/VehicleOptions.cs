@@ -100,7 +100,9 @@ namespace AdvancedVehicleOptions
                 }
 
                 // Refresh Transfer Vehicles
-                m_refreshTransferVehicles.Invoke(VehicleManager.instance, null);
+                //m_refreshTransferVehicles.Invoke(VehicleManager.instance, null);
+                typeof(VehicleManager).GetField("m_vehiclesRefreshed", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(VehicleManager.instance, false);
+                VehicleManager.instance.RefreshTransferVehicles();
 
                 // Make transfer vehicles dirty
                 //m_transferVehiclesDirty.SetValue(VehicleManager.instance, true);
