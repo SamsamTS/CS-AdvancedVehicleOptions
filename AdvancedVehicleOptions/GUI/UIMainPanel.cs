@@ -33,13 +33,13 @@ namespace AdvancedVehicleOptions.GUI
             "Forestry", "Farming", "Ore", "Oil", "Industry",
             "Police", "FireSafety", "Healthcare", "Deathcare", "Garbage",
             "Taxi", "Bus", "Metro", "Cargo Train", "Passenger Train",
-            "Cargo Ship", "Passenger Ship", "Plane" };
+            "Cargo Ship", "Passenger Ship", "Plane", "Tram" };
 
         public static readonly string[] vehicleIconList = { "IconCitizenVehicle",
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
               "ToolbarIconPolice", "InfoIconFireSafety", "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage",
               "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "IconServiceVehicle", "SubBarPublicTransportTrain",
-              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane" };
+              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane", "SubBarPublicTransportTram" };
 
         public UIOptionPanel optionPanel
         {

@@ -36,7 +36,8 @@ namespace AdvancedVehicleOptions
             TransportTrain,
             CargoShip,
             TransportShip,
-            TransportPlane
+            TransportPlane,
+            Tram
         }
 
         #region serialized
@@ -257,6 +258,9 @@ namespace AdvancedVehicleOptions
                 ai = m_vehicleAI as TaxiAI;
                 if (ai != null) return ((TaxiAI)ai).m_passengerCapacity;
 
+                ai = m_vehicleAI as TramAI;
+                if (ai != null) return ((TramAI)ai).m_passengerCapacity;
+
                 return -1;
             }
             set
@@ -303,13 +307,16 @@ namespace AdvancedVehicleOptions
 
                 ai = m_vehicleAI as TaxiAI;
                 if (ai != null) { ((TaxiAI)ai).m_passengerCapacity = value; return; }
+
+                ai = m_vehicleAI as TramAI;
+                if (ai != null) { ((TramAI)ai).m_passengerCapacity = value; return; }
             }
         }
         #endregion
 
         public static VehicleInfo prefabUpdateUnits = null;
         public static VehicleInfo prefabUpdateEngine = null;
-        private static MethodInfo m_refreshTransferVehicles = typeof(VehicleManager).GetMethod("RefreshTransferVehicles", BindingFlags.Instance | BindingFlags.NonPublic);
+        //private static MethodInfo m_refreshTransferVehicles = typeof(VehicleManager).GetMethod("RefreshTransferVehicles", BindingFlags.Instance | BindingFlags.NonPublic);
         //private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private VehicleInfo m_prefab = null;
@@ -416,6 +423,9 @@ namespace AdvancedVehicleOptions
 
             ai = vehicleAI as PassengerTrainAI;
             if (ai != null) return ((PassengerTrainAI)ai).m_passengerCapacity;
+
+            ai = vehicleAI as TramAI;
+            if (ai != null) return ((TramAI)ai).m_passengerCapacity;
 
             /*ai = prefab.m_vehicleAI as PoliceCarAI;
             if (ai != null) return ((PoliceCarAI)ai).m_policeCount;*/
@@ -615,6 +625,8 @@ namespace AdvancedVehicleOptions
                     return Category.Oil;
                 case ItemClass.SubService.IndustrialGeneric:
                     return Category.IndustryGeneric;
+                case ItemClass.SubService.PublicTransportTram:
+                    return Category.Tram;
             }
 
             return Category.Citizen;
