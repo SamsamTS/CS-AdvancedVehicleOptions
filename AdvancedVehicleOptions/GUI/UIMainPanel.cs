@@ -29,17 +29,17 @@ namespace AdvancedVehicleOptions.GUI
         private const int WIDTHLEFT = 470;
         private const int WIDTHRIGHT = 315;
 
-        public static readonly string[] categoryList = { "All", "Citizen",
+        public static readonly string[] categoryList = { "All", "Citizen", "Bicycle",
             "Forestry", "Farming", "Ore", "Oil", "Industry",
-            "Police", "FireSafety", "Healthcare", "Deathcare", "Garbage",
-            "Taxi", "Bus", "Metro", "Cargo Train", "Passenger Train",
-            "Cargo Ship", "Passenger Ship", "Plane", "Tram" };
+            "Police", "FireSafety", "Healthcare", "Deathcare", "Garbage", "Road Maintenance",
+            "Taxi", "Bus", "Metro", "Tram", "Cargo Train", "Passenger Train",
+            "Cargo Ship", "Passenger Ship", "Plane" };
 
-        public static readonly string[] vehicleIconList = { "IconCitizenVehicle",
+        public static readonly string[] vehicleIconList = { "IconCitizenVehicle", "IconCitizenBicycleVehicle",
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
-              "ToolbarIconPolice", "InfoIconFireSafety", "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage",
-              "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "IconServiceVehicle", "SubBarPublicTransportTrain",
-              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane", "SubBarPublicTransportTram" };
+              "ToolbarIconPolice", "InfoIconFireSafety", "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage", "InfoIconMaintenance",
+              "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTram", "IconServiceVehicle", "SubBarPublicTransportTrain",
+              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane" };
 
         public UIOptionPanel optionPanel
         {
@@ -115,7 +115,7 @@ namespace AdvancedVehicleOptions.GUI
                         {
                             m_fastList.DisplayAt(m_fastList.listPosition);
                             m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
-                            m_preview.parent.isVisible = true;
+                            m_followVehicle.isVisible = m_preview.parent.isVisible = true;
                         }
                     });
 
@@ -316,8 +316,7 @@ namespace AdvancedVehicleOptions.GUI
             m_fastList.selectedIndex = 0;
 
             m_optionPanel.isVisible = m_fastList.rowsData.m_size > 0;
-            m_preview.parent.isVisible = m_optionPanel.isVisible;
-            m_followVehicle.isVisible = m_optionPanel.isVisible;
+            m_followVehicle.isVisible = m_preview.parent.isVisible = m_optionPanel.isVisible;
         }
 
         private void FollowNextVehicle()
@@ -363,13 +362,13 @@ namespace AdvancedVehicleOptions.GUI
             VehicleOptions options = m_fastList.rowsData[i] as VehicleOptions;
 
             m_optionPanel.Show(options);
-            m_preview.parent.isVisible = true;
+            m_followVehicle.isVisible = m_preview.parent.isVisible = true;
 
             m_previewRenderer.mesh = options.prefab.m_mesh;
             m_previewRenderer.material = options.prefab.m_material;
             m_previewColor = options.color0;
             m_previewColor.a = 0; // Fixes the wrong lighting on one half of the vehicle
-            m_previewRenderer.cameraRotation = 120f;
+            m_previewRenderer.cameraRotation = -60;// 120f;
             m_previewRenderer.zoom = 3f;
             if (options.useColorVariations)
                 m_previewRenderer.Render(m_previewColor);

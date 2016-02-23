@@ -92,12 +92,12 @@ namespace AdvancedVehicleOptions
             float num = magnitude + 16f;
             float num2 = magnitude * m_zoom;
 
-            m_camera.transform.position = -Vector3.forward * num2;
-            m_camera.transform.rotation = Quaternion.identity;
+            m_camera.transform.position = Vector3.forward * num2;
+            m_camera.transform.rotation = Quaternion.AngleAxis(180, Vector3.up);
             m_camera.nearClipPlane = Mathf.Max(num2 - num * 1.5f, 0.01f);
             m_camera.farClipPlane = num2 + num * 1.5f;
 
-            Quaternion quaternion = Quaternion.Euler(-20f, 0f, 0f) * Quaternion.Euler(0f, m_rotation, 0f);
+            Quaternion quaternion = Quaternion.Euler(20f, 0f, 0f) * Quaternion.Euler(0f, m_rotation, 0f);
             Vector3 pos = quaternion * -m_bounds.center;
             Matrix4x4 matrix = Matrix4x4.TRS(pos, quaternion, Vector3.one);
 
@@ -106,8 +106,17 @@ namespace AdvancedVehicleOptions
             InfoManager.SubInfoMode currentSubMod = infoManager.CurrentSubMode; ;
             infoManager.SetCurrentMode(InfoManager.InfoMode.None, InfoManager.SubInfoMode.Default);
 
+            Light light = GameObject.Find("Directional Light").GetComponent<Light>();
+            float tmp = light.intensity;
+            Color tmp2 = light.color;
+            light.intensity = 2f;
+            light.color = Color.white;
+
             Graphics.DrawMesh(m_mesh, matrix, material, 0, m_camera, 0, null, true, true);
             m_camera.RenderWithShader(material.shader, "");
+
+            light.intensity = tmp;
+            light.color = tmp2;
 
             infoManager.SetCurrentMode(currentMod, currentSubMod);
 

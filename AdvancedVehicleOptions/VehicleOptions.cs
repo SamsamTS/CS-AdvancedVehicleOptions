@@ -19,6 +19,7 @@ namespace AdvancedVehicleOptions
         {
             None = -1,
             Citizen,
+            Bicycle,
             Forestry,
             Farming,
             Ore,
@@ -29,15 +30,16 @@ namespace AdvancedVehicleOptions
             Healthcare,
             Deathcare,
             Garbage,
+            Road,
             TransportTaxi,
             TransportBus,
             TransportMetro,
+            Tram,
             CargoTrain,
             TransportTrain,
             CargoShip,
             TransportShip,
-            TransportPlane,
-            Tram
+            TransportPlane
         }
 
         #region serialized
@@ -261,6 +263,12 @@ namespace AdvancedVehicleOptions
                 ai = m_vehicleAI as TramAI;
                 if (ai != null) return ((TramAI)ai).m_passengerCapacity;
 
+                ai = m_vehicleAI as MaintenanceTruckAI;
+                if (ai != null) return ((MaintenanceTruckAI)ai).m_maintenanceCapacity;
+
+                ai = m_vehicleAI as SnowTruckAI;
+                if (ai != null) return ((SnowTruckAI)ai).m_cargoCapacity;
+
                 return -1;
             }
             set
@@ -310,6 +318,12 @@ namespace AdvancedVehicleOptions
 
                 ai = m_vehicleAI as TramAI;
                 if (ai != null) { ((TramAI)ai).m_passengerCapacity = value; return; }
+
+                ai = m_vehicleAI as MaintenanceTruckAI;
+                if (ai != null) { ((MaintenanceTruckAI)ai).m_maintenanceCapacity = value; return; }
+
+                ai = m_vehicleAI as SnowTruckAI;
+                if (ai != null) { ((SnowTruckAI)ai).m_cargoCapacity = value; return; }
             }
         }
         #endregion
@@ -426,6 +440,12 @@ namespace AdvancedVehicleOptions
 
             ai = vehicleAI as TramAI;
             if (ai != null) return ((TramAI)ai).m_passengerCapacity;
+
+            ai = vehicleAI as MaintenanceTruckAI;
+            if (ai != null) return ((MaintenanceTruckAI)ai).m_maintenanceCapacity;
+
+            ai = vehicleAI as SnowTruckAI;
+            if (ai != null) return ((SnowTruckAI)ai).m_cargoCapacity;
 
             /*ai = prefab.m_vehicleAI as PoliceCarAI;
             if (ai != null) return ((PoliceCarAI)ai).m_policeCount;*/
@@ -593,6 +613,8 @@ namespace AdvancedVehicleOptions
                         return Category.Deathcare;
                 case ItemClass.Service.Garbage:
                     return Category.Garbage;
+                case ItemClass.Service.Road:
+                    return Category.Road;
             }
 
             switch (prefab.m_class.m_subService)
@@ -627,6 +649,8 @@ namespace AdvancedVehicleOptions
                     return Category.IndustryGeneric;
                 case ItemClass.SubService.PublicTransportTram:
                     return Category.Tram;
+                case ItemClass.SubService.ResidentialHigh:
+                    return Category.Bicycle;
             }
 
             return Category.Citizen;
