@@ -65,13 +65,6 @@ namespace AdvancedVehicleOptions.GUI
             // Loading config
             AdvancedVehicleOptions.LoadConfig();
 
-            // Random Speed
-            Detour.RandomSpeed.activated = true;
-            if (Detour.RandomSpeed.enabled)
-            {
-                Detour.RandomSpeed.Intitialize();
-            }
-
             if (!AdvancedVehicleOptions.config.hideGUI)
             {
                 try

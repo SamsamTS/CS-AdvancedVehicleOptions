@@ -38,12 +38,6 @@ namespace AdvancedVehicleOptions
         [XmlAttribute, DefaultValue(false)]
         public bool hideGUI = false;
 
-        [XmlAttribute, DefaultValue(false)]
-        public bool randomSpeed = false;
-
-        [XmlAttribute, DefaultValue(true)]
-        public bool highwaySpeed = true;
-
         [XmlElement("VehicleOptions")]
         public VehicleData[] data;
 
@@ -99,8 +93,6 @@ namespace AdvancedVehicleOptions
             if(config != null)
             {
                 version = config.version;
-                randomSpeed = config.randomSpeed;
-                highwaySpeed = config.highwaySpeed;
                 data = config.data;
 
                 if (AdvancedVehicleOptions.isGameLoaded) ConvertItems();
@@ -153,6 +145,8 @@ namespace AdvancedVehicleOptions
                 options[i].color3 = data[i].color3;
                 options[i].capacity = data[i].capacity;
             }
+
+            VehicleOptions.UpdateTransfertVehicles();
         }
     }
 }

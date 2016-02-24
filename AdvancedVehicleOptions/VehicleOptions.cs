@@ -101,14 +101,6 @@ namespace AdvancedVehicleOptions
                         }
                     }
                 }
-
-                // Refresh Transfer Vehicles
-                //m_refreshTransferVehicles.Invoke(VehicleManager.instance, null);
-                typeof(VehicleManager).GetField("m_vehiclesRefreshed", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(VehicleManager.instance, false);
-                VehicleManager.instance.RefreshTransferVehicles();
-
-                // Make transfer vehicles dirty
-                //m_transferVehiclesDirty.SetValue(VehicleManager.instance, true);
             }
         }
         // addBackEngine
@@ -549,6 +541,12 @@ namespace AdvancedVehicleOptions
             prefabUpdateEngine = null;
         }
 
+        public static void UpdateTransfertVehicles()
+        {
+            typeof(VehicleManager).GetField("m_vehiclesRefreshed", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(VehicleManager.instance, false);
+            VehicleManager.instance.RefreshTransferVehicles();
+        }
+
         public void SetPrefab(VehicleInfo prefab)
         {
             if (prefab == null) return;
@@ -921,7 +919,10 @@ namespace AdvancedVehicleOptions
             }
 
             if (conflicts.Length > 0)
+            {
+                VehicleOptions.UpdateTransfertVehicles();
                 DebugUtils.Log("Conflicts detected (this message is harmless):" + Environment.NewLine + conflicts);
+            }
         }
 
         public static void Restore(VehicleInfo prefab)
@@ -954,6 +955,7 @@ namespace AdvancedVehicleOptions
             {
                 Restore(prefab);
             }
+            VehicleOptions.UpdateTransfertVehicles();
         }
 
         public static void Clear()

@@ -263,6 +263,7 @@ namespace AdvancedVehicleOptions.GUI
                 m_initialized = false;
                 bool isEnabled = m_options.enabled;
                 DefaultOptions.Restore(m_options.prefab);
+                VehicleOptions.UpdateTransfertVehicles();
 
                 VehicleOptions.prefabUpdateEngine = m_options.prefab;
                 VehicleOptions.prefabUpdateUnits = m_options.prefab;
@@ -293,6 +294,7 @@ namespace AdvancedVehicleOptions.GUI
                     if (engine.enabled != state)
                     {
                         engine.enabled = state;
+                        VehicleOptions.UpdateTransfertVehicles();
                         eventEnableCheckChanged(this, state);
                     }
                 }
@@ -301,6 +303,7 @@ namespace AdvancedVehicleOptions.GUI
                     if (m_options.enabled != state)
                     {
                         m_options.enabled = state;
+                        VehicleOptions.UpdateTransfertVehicles();
                         eventEnableCheckChanged(this, state);
                     }
                 }

@@ -32,12 +32,8 @@ namespace AdvancedVehicleOptions
             try
             {
                 AdvancedVehicleOptions.LoadConfig();
-                Detour.RandomSpeed.enabled = AdvancedVehicleOptions.config.randomSpeed;
-                Detour.RandomSpeed.highwaySpeed = AdvancedVehicleOptions.config.highwaySpeed;
 
-                UICheckBox highway = null;
                 UICheckBox checkBox;
-
                 UIHelperBase group = helper.AddGroup(Name);
 
                 checkBox = (UICheckBox)group.AddCheckbox("Hide the user interface", AdvancedVehicleOptions.config.hideGUI, (b) =>
@@ -49,29 +45,6 @@ namespace AdvancedVehicleOptions
                     }
                 });
                 checkBox.tooltip = "Hide the UI completely if you feel like you are done with it\nand want to save the little bit of memory it takes\nEverything else will still be functional";
-
-                checkBox = (UICheckBox)group.AddCheckbox("Slightly randomize the speed of vehicles", Detour.RandomSpeed.enabled, (b) =>
-                {
-                    if (Detour.RandomSpeed.enabled != b)
-                    {
-                        Detour.RandomSpeed.enabled = b;
-                        highway.enabled = b;
-                        AdvancedVehicleOptions.SaveConfig();
-                    }
-                });
-                checkBox.tooltip = "Each vehicles will have a slight (+/-10%) variation of their speed\n\nWARNING: It might cause the simulation to slow down";
-
-                highway = (UICheckBox)group.AddCheckbox("Realistic highway speeds", Detour.RandomSpeed.highwaySpeed, (b) =>
-                {
-                    if (Detour.RandomSpeed.highwaySpeed != b)
-                    {
-                        Detour.RandomSpeed.highwaySpeed = b;
-                        AdvancedVehicleOptions.SaveConfig();
-                    }
-                });
-                highway.tooltip = "On highways, vehicles will go faster in the inside lane and slower in the outside lane\n\nWARNING: It might slow down the simulation even more";
-
-                highway.enabled = Detour.RandomSpeed.enabled;
             }
             catch (Exception e)
             {
@@ -80,7 +53,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.5";
+        public const string version = "1.5.1";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -201,7 +174,6 @@ namespace AdvancedVehicleOptions
             try
             {
                 SaveConfig();
-                Detour.RandomSpeed.Restore();
 
                 GUI.UIUtils.DestroyDeeply(m_mainPanel);
                 GameObject.Destroy(m_gameObject);
@@ -249,25 +221,10 @@ namespace AdvancedVehicleOptions
 
                 CreateConfig();
 
-                // Warning
-                UIView.PushModal(GUI.UIWarningModal.instance);
-                GUI.UIWarningModal.instance.message = "The 'Slightly randomize the speed of vehicles' and the 'Realistic highway speeds' greatly increase the realism of the traffic but can also considerably impact the speed of the simulation.\n\n" +
-                    "Do you want to enable these features ?\n(Can be enabled/disabled in the mod options)";
-                GUI.UIWarningModal.instance.Show(true);
-
                 return;
             }
 
             config.Deserialize(m_fileName);
-
-            if (ParseVersion(config.version) < ParseVersion("1.3.9"))
-            {
-                // Warning
-                UIView.PushModal(GUI.UIWarningModal.instance);
-                GUI.UIWarningModal.instance.message = "The 'Slightly randomize the speed of vehicles' and the 'Realistic highway speeds' greatly increase the realism of the traffic but can also considerably impact the speed of the simulation.\n\n" +
-                    "Do you want to enable these features ?\n(Can be enabled/disabled in the mod options)";
-                GUI.UIWarningModal.instance.Show(true);
-            }
 
             if (config.options == null)
             {
@@ -306,8 +263,6 @@ namespace AdvancedVehicleOptions
         public static void SaveConfig()
         {
             config.version = ModInfo.version;
-            config.randomSpeed = Detour.RandomSpeed.enabled;
-            config.highwaySpeed = Detour.RandomSpeed.highwaySpeed;
             config.Serialize(m_fileName);
         }
 
