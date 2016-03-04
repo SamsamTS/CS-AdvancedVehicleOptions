@@ -433,12 +433,6 @@ namespace AdvancedVehicleOptions
             ai = vehicleAI as TramAI;
             if (ai != null) return ((TramAI)ai).m_passengerCapacity;
 
-            ai = vehicleAI as MaintenanceTruckAI;
-            if (ai != null) return ((MaintenanceTruckAI)ai).m_maintenanceCapacity;
-
-            ai = vehicleAI as SnowTruckAI;
-            if (ai != null) return ((SnowTruckAI)ai).m_cargoCapacity;
-
             /*ai = prefab.m_vehicleAI as PoliceCarAI;
             if (ai != null) return ((PoliceCarAI)ai).m_policeCount;*/
 
