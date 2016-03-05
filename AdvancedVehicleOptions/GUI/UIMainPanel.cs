@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
+using ColossalFramework.Globalization;
 using ColossalFramework.UI;
 
 using System;
+using System.Reflection;
 
 namespace AdvancedVehicleOptions.GUI
 {
@@ -17,7 +19,7 @@ namespace AdvancedVehicleOptions.GUI
         private UISprite m_followVehicle;
         private UIOptionPanel m_optionPanel;
 
-        public UISprite m_button;
+        public UIButton m_button;
 
         private VehicleOptions[] m_optionsList;
         private PreviewRenderer m_previewRenderer;
@@ -92,25 +94,62 @@ namespace AdvancedVehicleOptions.GUI
 
                     // Adding main button
                     UITabstrip toolStrip = view.FindUIComponent<UITabstrip>("MainToolstrip");
-                    m_button = toolStrip.AddUIComponent<UISprite>();
-                    m_button.spriteName = "IconCitizenVehicle";
-                    m_button.size = m_button.spriteInfo.pixelSize;
+                    m_button = toolStrip.AddUIComponent<UIButton>();
+
+                    m_button.normalBgSprite = "IconCitizenVehicle";
+                    m_button.focusedFgSprite = "ToolbarIconGroup6Focused";
+                    m_button.hoveredFgSprite = "ToolbarIconGroup6Hovered";
+
+                    m_button.size = new Vector2(43f, 49f);
+                    m_button.name = "Advanced Vehicle Options";
                     m_button.tooltip = "Advanced Vehicle Options " + ModInfo.version;
                     m_button.relativePosition = new Vector3(0, 5);
 
-                    view.FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
-
-                    m_button.eventClick += new MouseEventHandler((c, p) =>
+                    m_button.eventButtonStateChanged += (c, s) =>
                     {
-                        if (p != null) p.Use();
-                        isVisible = !isVisible;
-                        if (isVisible)
+                        if(s == UIButton.ButtonState.Focused)
                         {
-                            m_fastList.DisplayAt(m_fastList.listPosition);
-                            m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
-                            m_followVehicle.isVisible = m_preview.parent.isVisible = true;
+                            if (!isVisible)
+                            {
+                                isVisible = true;
+                                m_fastList.DisplayAt(m_fastList.listPosition);
+                                m_optionPanel.Show(m_fastList.rowsData[m_fastList.selectedIndex] as VehicleOptions);
+                                m_followVehicle.isVisible = m_preview.parent.isVisible = true;
+                            }
                         }
-                    });
+                        else
+                        {
+                            isVisible = false;
+                            m_button.Unfocus();
+                        }
+                    };
+
+                    m_title.closeButton.eventClick += (component, param) =>
+                    {
+                        toolStrip.closeButton.SimulateClick();
+                    };
+
+                    Locale locale = (Locale)typeof(LocaleManager).GetField("m_Locale", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(LocaleManager.instance);
+                    Locale.Key key = new Locale.Key
+                    {
+                        m_Identifier = "TUTORIAL_ADVISER_TITLE",
+                        m_Key = m_button.name
+                    };
+                    if (!locale.Exists(key))
+                    {
+                        locale.AddLocalizedString(key, m_button.name);
+                    }
+                    key = new Locale.Key
+                    {
+                        m_Identifier = "TUTORIAL_ADVISER",
+                        m_Key = m_button.name
+                    };
+                    if (!locale.Exists(key))
+                    {
+                        locale.AddLocalizedString(key, "");
+                    }
+
+                    view.FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIPanel>().color = new Color32(0, 0, 0, 0);
 
                     optionList = AdvancedVehicleOptions.config.options;
                 }

@@ -113,7 +113,7 @@ namespace AdvancedVehicleOptions
             }
             set
             {
-                if (m_prefab == null || !hasTrailer || m_prefab.m_vehicleType != VehicleInfo.VehicleType.Train) return;
+                if (m_prefab == null || !hasTrailer || (m_prefab.m_vehicleType != VehicleInfo.VehicleType.Train && m_prefab.m_vehicleType != VehicleInfo.VehicleType.Tram)) return;
 
                 VehicleInfo newTrailer = value ? m_prefab : DefaultOptions.GetLastTrailer(m_prefab);
                 int last = m_prefab.m_trailers.Length - 1;
@@ -505,7 +505,7 @@ namespace AdvancedVehicleOptions
             }
             prefabUpdateUnits = null;
 
-            DebugUtils.Log("Modified capacity of " + count + " vehicle(s)");
+            DebugUtils.Log("Modified capacity of " + count + " vehicle(s). Total unit count: " + CitizenManager.instance.m_unitCount + "/" + CitizenManager.MAX_UNIT_COUNT);
         }
 
         public static IEnumerator UpdateBackEngines(ThreadBase t)
@@ -537,8 +537,16 @@ namespace AdvancedVehicleOptions
 
         public static void UpdateTransfertVehicles()
         {
-            typeof(VehicleManager).GetField("m_vehiclesRefreshed", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(VehicleManager.instance, false);
-            VehicleManager.instance.RefreshTransferVehicles();
+            try
+            {
+                typeof(VehicleManager).GetField("m_vehiclesRefreshed", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(VehicleManager.instance, false);
+                VehicleManager.instance.RefreshTransferVehicles();
+            }
+            catch(Exception e)
+            {
+                DebugUtils.Log("Couldn't update transfer vehicles :");
+                Debug.LogError(e);
+            }
         }
 
         public void SetPrefab(VehicleInfo prefab)
