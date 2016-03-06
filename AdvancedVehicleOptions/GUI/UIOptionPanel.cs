@@ -307,6 +307,13 @@ namespace AdvancedVehicleOptions.GUI
                         eventEnableCheckChanged(this, state);
                     }
                 }
+
+                if (!state && !AdvancedVehicleOptions.CheckServiceValidity(m_options.category))
+                {
+                    GUI.UIWarningModal.instance.message = UIMainPanel.categoryList[(int)m_options.category + 1] + " may not work correctly because no vehicles are allowed to spawn.";
+                    UIView.PushModal(GUI.UIWarningModal.instance);
+                    GUI.UIWarningModal.instance.Show(true);
+                }
             }
             else if (component == m_addBackEngine && m_options.addBackEngine != state)
             {

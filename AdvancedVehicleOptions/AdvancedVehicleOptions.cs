@@ -53,7 +53,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.5.3";
+        public const string version = "1.5.4";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -264,6 +264,42 @@ namespace AdvancedVehicleOptions
         {
             config.version = ModInfo.version;
             config.Serialize(m_fileName);
+        }
+
+        public static void CheckAllServicesValidity()
+        {
+            if (config == null) return;
+
+            string warning = "";
+
+            for (int i = 0; i <= (int)VehicleOptions.Category.TransportPlane; i++)
+                if (!CheckServiceValidity((VehicleOptions.Category)i)) warning += "- " + GUI.UIMainPanel.categoryList[i + 1] + "\n";
+
+            if(warning != "")
+            {
+                GUI.UIWarningModal.instance.message = "The following services may not work correctly because no vehicles are allowed to spawn :\n\n" + warning;
+                UIView.PushModal(GUI.UIWarningModal.instance);
+                GUI.UIWarningModal.instance.Show(true);
+            }
+
+        }
+
+        public static bool CheckServiceValidity(VehicleOptions.Category service)
+        {
+            if (config == null || config.options == null) return true;
+
+            int count = 0;
+
+            for (int i = 0; i < config.options.Length; i++)
+            {
+                if (config.options[i].category == service)
+                {
+                    if(config.options[i].enabled) return true;
+                    count++;
+                }
+            }
+
+            return count == 0;
         }
 
         public static void ClearVehicles(VehicleOptions options, bool parked)

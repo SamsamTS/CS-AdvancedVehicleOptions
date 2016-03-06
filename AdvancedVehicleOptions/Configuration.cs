@@ -5,6 +5,8 @@ using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using System.ComponentModel;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace AdvancedVehicleOptions
 {
@@ -17,12 +19,15 @@ namespace AdvancedVehicleOptions
             #region serialized
             [XmlAttribute("name")]
             public string name;
-            public bool enabled;
-            public bool addBackEngine;
+            [DefaultValue(true)]
+            public bool enabled = true;
+            [DefaultValue(false)]
+            public bool addBackEngine = false;
             public float maxSpeed;
             public float acceleration;
             public float braking;
-            public bool useColorVariations;
+            [DefaultValue(true)]
+            public bool useColorVariations = true;
             public HexaColor color0;
             public HexaColor color1;
             public HexaColor color2;
@@ -30,6 +35,14 @@ namespace AdvancedVehicleOptions
             [DefaultValue(-1)]
             public int capacity = -1;
             #endregion
+
+            public bool isCustomAsset
+            {
+                get
+                {
+                    return name.Contains(".");
+                }
+            }
         }
 
         [XmlAttribute]
@@ -44,11 +57,39 @@ namespace AdvancedVehicleOptions
         [XmlIgnore]
         public VehicleOptions[] options;
 
+        private List<VehicleData> m_defaultVehicles = new List<VehicleData>();
+
         public void Serialize(string filename)
         {
             try
             {
                 if (AdvancedVehicleOptions.isGameLoaded) ConvertOptions();
+
+                // Add back default vehicle options that might not exist on the map
+                // I.E. Snowplow on non-snowy maps
+                if(m_defaultVehicles != null)
+                {
+                    List<VehicleData> new_data = new List<VehicleData>(data);
+
+                    for(int i = 0; i<m_defaultVehicles.Count; i++)
+                    {
+                        bool found = false;
+                        for (int j = 0; j < data.Length; j++)
+                        {
+                            if (m_defaultVehicles[i].name == data[j].name)
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if(!found)
+                        {
+                            new_data.Add(m_defaultVehicles[i]);
+                        }
+                    }
+
+                    data = new_data.ToArray();
+                }
 
                 using (FileStream stream = new FileStream(filename, FileMode.OpenOrCreate))
                 {
@@ -94,6 +135,15 @@ namespace AdvancedVehicleOptions
             {
                 version = config.version;
                 data = config.data;
+
+                // Saves all default vehicle options that might not exist on the map
+                // I.E. Snowplow on non-snowy maps
+                m_defaultVehicles.Clear();
+                for (int i = 0; i < data.Length; i++)
+                {
+                    if (!data[i].isCustomAsset)
+                        m_defaultVehicles.Add(data[i]);
+                }
 
                 if (AdvancedVehicleOptions.isGameLoaded) ConvertItems();
             }

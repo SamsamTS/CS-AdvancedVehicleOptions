@@ -26,6 +26,7 @@ namespace AdvancedVehicleOptions
             Oil,
             IndustryGeneric,
             Police,
+            Prison,
             FireSafety,
             Healthcare,
             Deathcare,
@@ -603,7 +604,10 @@ namespace AdvancedVehicleOptions
             switch (prefab.m_class.m_service)
             {
                 case ItemClass.Service.PoliceDepartment:
-                    return Category.Police;
+                    if (prefab.m_class.m_level == ItemClass.Level.Level4)
+                        return Category.Prison;
+                    else
+                        return Category.Police;
                 case ItemClass.Service.FireDepartment:
                     return Category.FireSafety;
                 case ItemClass.Service.HealthCare:

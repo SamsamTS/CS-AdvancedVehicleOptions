@@ -15,15 +15,15 @@ namespace AdvancedVehicleOptions.GUI
         public string iconSprite
         {
             get { return m_icon.spriteName; }
-            set {
-                if (m_icon == null) return;
+            set
+            {
+                if (m_icon == null) SetupControls();
                 m_icon.spriteName = value;
 
                 if (m_icon.spriteInfo != null)
                 {
-                    m_icon.size = m_icon.spriteInfo.pixelSize;
-                    UIUtils.ResizeIcon(m_icon, new Vector2(32, 32));
-                    m_icon.relativePosition = new Vector3(10, Mathf.Floor((height - m_icon.height) / 2));
+                    UIUtils.ResizeIcon(m_icon, new Vector2(30, 30));
+                    m_icon.relativePosition = new Vector3(10, 5);
                 }
             }
         }
@@ -36,45 +36,31 @@ namespace AdvancedVehicleOptions.GUI
         public string title
         {
             get { return m_title.text; }
-            set { m_title.text = value; }
+            set
+            {
+                if (m_title == null) SetupControls();
+                m_title.text = value;
+            }
         }
 
-        public override void Awake()
+        private void SetupControls()
         {
-            base.Awake();
-
-            m_icon = AddUIComponent<UISprite>();
-            m_title = AddUIComponent<UILabel>();
-            m_close = AddUIComponent<UIButton>();
-            m_drag = AddUIComponent<UIDragHandle>();
-
-            height = 40;
-            width = 450;
-            title = "(None)";
-            iconSprite = "";
-        }
-
-        public override void Start()
-        {
-            base.Start();
-            
             width = parent.width;
-            relativePosition = Vector3.zero;
+            height = 40;
             isVisible = true;
             canFocus = true;
             isInteractive = true;
+            relativePosition = Vector3.zero;
 
-            m_drag.width = width - 50;
-            m_drag.height = height;
-            m_drag.relativePosition = Vector3.zero;
-            m_drag.target = parent;
-
+            m_icon = AddUIComponent<UISprite>();
             m_icon.spriteName = iconSprite;
-            m_icon.relativePosition = new Vector3(10, 0);
+            m_icon.relativePosition = new Vector3(10, 5);
 
+            m_title = AddUIComponent<UILabel>();
             m_title.relativePosition = new Vector3(50, 13);
             m_title.text = title;
 
+            m_close = AddUIComponent<UIButton>();
             m_close.relativePosition = new Vector3(width - 35, 2);
             m_close.normalBgSprite = "buttonclose";
             m_close.hoveredBgSprite = "buttonclosehover";
@@ -85,6 +71,12 @@ namespace AdvancedVehicleOptions.GUI
                     UIView.PopModal();
                 parent.Hide();
             };
+
+            m_drag = AddUIComponent<UIDragHandle>();
+            m_drag.width = width - 50;
+            m_drag.height = height;
+            m_drag.relativePosition = Vector3.zero;
+            m_drag.target = parent;
         }
     }
 }

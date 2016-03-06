@@ -33,13 +33,13 @@ namespace AdvancedVehicleOptions.GUI
 
         public static readonly string[] categoryList = { "All", "Citizen", "Bicycle",
             "Forestry", "Farming", "Ore", "Oil", "Industry",
-            "Police", "FireSafety", "Healthcare", "Deathcare", "Garbage", "Road Maintenance",
+            "Police", "Prison", "Fire Safety", "Healthcare", "Deathcare", "Garbage", "Road Maintenance",
             "Taxi", "Bus", "Metro", "Tram", "Cargo Train", "Passenger Train",
             "Cargo Ship", "Passenger Ship", "Plane" };
 
         public static readonly string[] vehicleIconList = { "IconCitizenVehicle", "IconCitizenBicycleVehicle",
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
-              "ToolbarIconPolice", "InfoIconFireSafety", "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage", "InfoIconMaintenance",
+              "ToolbarIconPolice", "IconPolicyDoubleSentences", "InfoIconFireSafety", "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage", "InfoIconMaintenance",
               "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTram", "IconServiceVehicle", "SubBarPublicTransportTrain",
               "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane" };
 
@@ -66,6 +66,7 @@ namespace AdvancedVehicleOptions.GUI
 
             // Loading config
             AdvancedVehicleOptions.LoadConfig();
+            AdvancedVehicleOptions.CheckAllServicesValidity();
 
             if (!AdvancedVehicleOptions.config.hideGUI)
             {
