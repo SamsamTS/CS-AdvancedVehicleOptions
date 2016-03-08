@@ -45,6 +45,16 @@ namespace AdvancedVehicleOptions
                     }
                 });
                 checkBox.tooltip = "Hide the UI completely if you feel like you are done with it\nand want to save the little bit of memory it takes\nEverything else will still be functional";
+
+                checkBox = (UICheckBox)group.AddCheckbox("Disable warning at map loading", !AdvancedVehicleOptions.config.onLoadCheck, (b) =>
+                {
+                    if (AdvancedVehicleOptions.config.onLoadCheck == b)
+                    {
+                        AdvancedVehicleOptions.config.onLoadCheck = !b;
+                        AdvancedVehicleOptions.SaveConfig();
+                    }
+                });
+                checkBox.tooltip = "Disable service vehicle availability check at the loading of a map";
             }
             catch (Exception e)
             {
@@ -53,7 +63,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.5.4";
+        public const string version = "1.5.5";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -63,8 +73,6 @@ namespace AdvancedVehicleOptions
 
         private static VehicleInfo m_removeInfo;
         private static VehicleInfo m_removeParkedInfo;
-
-        private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private const string m_fileName = "AdvancedVehicleOptions.xml";
 
@@ -268,7 +276,7 @@ namespace AdvancedVehicleOptions
 
         public static void CheckAllServicesValidity()
         {
-            if (config == null) return;
+            if (config == null || !config.onLoadCheck) return;
 
             string warning = "";
 

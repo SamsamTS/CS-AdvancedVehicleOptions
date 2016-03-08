@@ -51,6 +51,9 @@ namespace AdvancedVehicleOptions
         [XmlAttribute, DefaultValue(false)]
         public bool hideGUI = false;
 
+        [XmlAttribute, DefaultValue(true)]
+        public bool onLoadCheck = true;
+
         [XmlElement("VehicleOptions")]
         public VehicleData[] data;
 
@@ -135,6 +138,8 @@ namespace AdvancedVehicleOptions
             {
                 version = config.version;
                 data = config.data;
+                hideGUI = config.hideGUI;
+                onLoadCheck = config.onLoadCheck;
 
                 // Saves all default vehicle options that might not exist on the map
                 // I.E. Snowplow on non-snowy maps
