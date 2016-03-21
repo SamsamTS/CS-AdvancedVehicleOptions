@@ -70,11 +70,11 @@ namespace AdvancedVehicleOptions
 
                 // Add back default vehicle options that might not exist on the map
                 // I.E. Snowplow on non-snowy maps
-                if(m_defaultVehicles != null)
+                if (m_defaultVehicles.Count > 0)
                 {
                     List<VehicleData> new_data = new List<VehicleData>(data);
 
-                    for(int i = 0; i<m_defaultVehicles.Count; i++)
+                    for (int i = 0; i < m_defaultVehicles.Count; i++)
                     {
                         bool found = false;
                         for (int j = 0; j < data.Length; j++)
@@ -85,7 +85,7 @@ namespace AdvancedVehicleOptions
                                 break;
                             }
                         }
-                        if(!found)
+                        if (!found)
                         {
                             new_data.Add(m_defaultVehicles[i]);
                         }
@@ -141,14 +141,18 @@ namespace AdvancedVehicleOptions
                 hideGUI = config.hideGUI;
                 onLoadCheck = config.onLoadCheck;
 
-                // Saves all default vehicle options that might not exist on the map
-                // I.E. Snowplow on non-snowy maps
-                m_defaultVehicles.Clear();
-                for (int i = 0; i < data.Length; i++)
+                if(data != null)
                 {
-                    if (!data[i].isCustomAsset)
-                        m_defaultVehicles.Add(data[i]);
+                    // Saves all default vehicle options that might not exist on the map
+                    // I.E. Snowplow on non-snowy maps
+                    m_defaultVehicles.Clear();
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        if (data[i] != null && !data[i].isCustomAsset)
+                            m_defaultVehicles.Add(data[i]);
+                    }
                 }
+
 
                 if (AdvancedVehicleOptions.isGameLoaded) ConvertItems();
             }
