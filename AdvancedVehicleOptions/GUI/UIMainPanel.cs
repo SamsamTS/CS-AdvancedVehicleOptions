@@ -157,7 +157,7 @@ namespace AdvancedVehicleOptions.GUI
                 catch(Exception e)
                 {
                     DebugUtils.Log("UI initialization failed.");
-                    Debug.LogException(e);
+                    DebugUtils.LogException(e);
 
                     if (m_button != null) GameObject.Destroy(m_button.gameObject);
 
@@ -176,7 +176,7 @@ namespace AdvancedVehicleOptions.GUI
 
             DebugUtils.Log("Destroying UIMainPanel");
 
-            Destroy(m_button);
+            if (m_button != null) Destroy(m_button);
             UIUtils.DestroyDeeply(m_optionPanel);
         }
 
@@ -289,8 +289,8 @@ namespace AdvancedVehicleOptions.GUI
             // Event handlers
             m_fastList.eventSelectedIndexChanged += OnSelectedItemChanged; 
             m_optionPanel.eventEnableCheckChanged += OnEnableStateChanged;
-            m_reload.eventClick += (c, t) => { AdvancedVehicleOptions.LoadConfig(); optionList = AdvancedVehicleOptions.config.options; };
-            m_save.eventClick += (c, t) => AdvancedVehicleOptions.SaveConfig();
+            m_reload.eventClick += (c, t) => { AdvancedVehicleOptions.RestoreBackup(); AdvancedVehicleOptions.LoadConfig(); optionList = AdvancedVehicleOptions.config.options; };
+            m_save.eventClick += (c, t) => AdvancedVehicleOptions.SaveBackup();
 
             panel.eventMouseDown += (c, p) =>
             {

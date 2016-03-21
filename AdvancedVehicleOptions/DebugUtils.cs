@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using ColossalFramework.Plugins;
 
+using System;
+
 namespace AdvancedVehicleOptions
 {
     public class DebugUtils
@@ -36,6 +38,12 @@ namespace AdvancedVehicleOptions
                 Debug.Log(modPrefix + message);
             }
             m_lastLog = message;
+        }
+
+        public static void LogException(Exception e)
+        {
+            Log("Intercepted exception (not game breaking):");
+            Debug.LogException(e);
         }
 
         private static string m_lastLog;

@@ -692,7 +692,7 @@ namespace AdvancedVehicleOptions
                     }
                     catch (Exception e)
                     {
-                        Debug.LogException(e);
+                        DebugUtils.LogException(e);
                     }
                 }
             }

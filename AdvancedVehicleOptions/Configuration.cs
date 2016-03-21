@@ -105,7 +105,7 @@ namespace AdvancedVehicleOptions
             catch (Exception e)
             {
                 DebugUtils.Warning("Couldn't save configuration at \"" + Directory.GetCurrentDirectory() + "\"");
-                Debug.LogException(e);
+                DebugUtils.LogException(e);
             }
         }
 
@@ -129,7 +129,7 @@ namespace AdvancedVehicleOptions
             {
                 // Couldn't Deserialize (XML malformed?)
                 DebugUtils.Warning("Couldn't load configuration (XML malformed?)");
-                Debug.LogException(e);
+                DebugUtils.LogException(e);
 
                 config = null;
             }

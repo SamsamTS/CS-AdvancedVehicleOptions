@@ -59,11 +59,11 @@ namespace AdvancedVehicleOptions
             catch (Exception e)
             {
                 DebugUtils.Log("OnSettingsUI failed");
-                Debug.LogException(e);
+                DebugUtils.LogException(e);
             }
         }
 
-        public const string version = "1.5.5";
+        public const string version = "1.5.7";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -116,15 +116,11 @@ namespace AdvancedVehicleOptions
                 DefaultOptions.StoreAll();
 
                 // Creating a backup
-                if (File.Exists(m_fileName))
-                {
-                    File.Copy(m_fileName, m_fileName + ".bak", true);
-                    DebugUtils.Log("Backup configuration file created");
-                }
+                SaveBackup();
             }
             catch(Exception e)
             {
-                Debug.LogException(e);
+                DebugUtils.LogException(e);
             }
         }
         /// <summary>
@@ -170,7 +166,7 @@ namespace AdvancedVehicleOptions
             {
                 if (m_gameObject != null)
                     GameObject.Destroy(m_gameObject);
-                Debug.LogException(e);
+                DebugUtils.LogException(e);
             }
         }
 
@@ -181,16 +177,17 @@ namespace AdvancedVehicleOptions
         {
             try
             {
-                SaveConfig();
+                //SaveConfig();
 
                 GUI.UIUtils.DestroyDeeply(m_mainPanel);
-                GameObject.Destroy(m_gameObject);
+                if (m_gameObject != null)
+                    GameObject.Destroy(m_gameObject);
 
                 isGameLoaded = false;
             }
             catch (Exception e)
             {
-                Debug.LogException(e);
+                DebugUtils.LogException(e);
             }
         }
 
@@ -204,10 +201,26 @@ namespace AdvancedVehicleOptions
             }
             catch (Exception e)
             {
-                Debug.LogException(e);
+                DebugUtils.LogException(e);
             }
         }
         #endregion
+
+        public static void RestoreBackup()
+        {
+            if (!File.Exists(m_fileName + ".bak")) return;
+
+            File.Copy(m_fileName + ".bak", m_fileName, true);
+            DebugUtils.Log("Backup configuration file restored");
+        }
+
+        public static void SaveBackup()
+        {
+            if (!File.Exists(m_fileName)) return;
+
+            File.Copy(m_fileName, m_fileName + ".bak", true);
+            DebugUtils.Log("Backup configuration file created");
+        }
 
         /// <summary>
         /// Load and apply the configuration file
