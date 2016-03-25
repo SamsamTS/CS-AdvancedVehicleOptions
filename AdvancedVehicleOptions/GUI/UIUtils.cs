@@ -152,7 +152,7 @@ namespace AdvancedVehicleOptions.GUI
             colorField.normalBgSprite = "ColorPickerOutline";
             colorField.hoveredBgSprite = "ColorPickerOutlineHovered";
             colorField.selectedColor = Color.black;
-            colorField.pickerPosition = UIColorField.ColorPickerPosition.RightAbove;
+            colorField.pickerPosition = UIColorField.ColorPickerPosition.LeftAbove;
 
             return colorField;
         }

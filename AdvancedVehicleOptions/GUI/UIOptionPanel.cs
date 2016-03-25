@@ -140,6 +140,7 @@ namespace AdvancedVehicleOptions.GUI
 
             m_color0 = UIUtils.CreateColorField(panel);
             m_color0.name = "AVO-color0";
+            m_color0.popupTopmostRoot = false;
             m_color0.relativePosition = new Vector3(13 , 95 - 2);
             m_color0_hex = UIUtils.CreateTextField(panel);
             m_color0_hex.maxLength = 6;
@@ -147,6 +148,7 @@ namespace AdvancedVehicleOptions.GUI
 
             m_color1 = UIUtils.CreateColorField(panel);
             m_color1.name = "AVO-color1";
+            m_color1.popupTopmostRoot = false;
             m_color1.relativePosition = new Vector3(13, 120 - 2);
             m_color1_hex = UIUtils.CreateTextField(panel);
             m_color1_hex.maxLength = 6;
@@ -154,6 +156,7 @@ namespace AdvancedVehicleOptions.GUI
 
             m_color2 = UIUtils.CreateColorField(panel);
             m_color2.name = "AVO-color2";
+            m_color2.popupTopmostRoot = false;
             m_color2.relativePosition = new Vector3(158, 95 - 2);
             m_color2_hex = UIUtils.CreateTextField(panel);
             m_color2_hex.maxLength = 6;
@@ -161,6 +164,7 @@ namespace AdvancedVehicleOptions.GUI
 
             m_color3 = UIUtils.CreateColorField(panel);
             m_color3.name = "AVO-color3";
+            m_color3.popupTopmostRoot = false;
             m_color3.relativePosition = new Vector3(158, 120 - 2);
             m_color3_hex = UIUtils.CreateTextField(panel);
             m_color3_hex.maxLength = 6;
