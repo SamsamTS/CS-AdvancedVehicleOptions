@@ -322,9 +322,12 @@ namespace AdvancedVehicleOptions.GUI
             }
             else if (component == m_addBackEngine && m_options.addBackEngine != state)
             {
-                m_options.addBackEngine = m_addBackEngine.isChecked;
-                VehicleOptions.prefabUpdateEngine = m_options.prefab;
-                new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
+                m_options.addBackEngine = state;
+                if (m_options.addBackEngine == state)
+                {
+                    VehicleOptions.prefabUpdateEngine = m_options.prefab;
+                    new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
+                }
             }
             else if (component == m_useColors && m_options.useColorVariations != state)
             {

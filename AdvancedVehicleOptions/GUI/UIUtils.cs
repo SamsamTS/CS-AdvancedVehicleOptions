@@ -149,7 +149,9 @@ namespace AdvancedVehicleOptions.GUI
             colorField.verticalAlignment = UIVerticalAlignment.Top;
 
             colorField.size = new Vector2(40f, 26f);
+            colorField.atlas = GetAtlas("InMapEditor");
             colorField.normalBgSprite = "ColorPickerOutline";
+            colorField.normalFgSprite = "ColorPickerColor";
             colorField.hoveredBgSprite = "ColorPickerOutlineHovered";
             colorField.selectedColor = Color.black;
             colorField.pickerPosition = UIColorField.ColorPickerPosition.LeftAbove;
@@ -197,6 +199,17 @@ namespace AdvancedVehicleOptions.GUI
             GameObject.Destroy(component);
         }
 
+        public static UITextureAtlas GetAtlas(string name)
+        {
+            UITextureAtlas[] atlases = Resources.FindObjectsOfTypeAll(typeof(UITextureAtlas)) as UITextureAtlas[];
+            for (int i = 0; i < atlases.Length; i++)
+            {
+                if (atlases[i].name == name)
+                    return atlases[i];
+            }
+
+            return UIView.GetAView().defaultAtlas;
+        }
 
         public static void Debug(UIComponent component)
         {

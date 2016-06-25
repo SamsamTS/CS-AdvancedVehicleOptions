@@ -64,9 +64,19 @@ namespace AdvancedVehicleOptions.GUI
         {
             base.Start();
 
-            // Loading config
-            AdvancedVehicleOptions.LoadConfig();
-            AdvancedVehicleOptions.CheckAllServicesValidity();
+            try
+            {
+                // Loading config
+                AdvancedVehicleOptions.LoadConfig();
+                AdvancedVehicleOptions.CheckAllServicesValidity();
+            }
+            catch(Exception e)
+            {
+                DebugUtils.Log("UI initialization failed.");
+                DebugUtils.LogException(e);
+
+                GameObject.Destroy(gameObject);
+            }
 
             if (!AdvancedVehicleOptions.config.hideGUI)
             {

@@ -458,7 +458,7 @@ namespace AdvancedVehicleOptions
             Array16<Vehicle> vehicles = VehicleManager.instance.m_vehicles;
             for (int i = 0; i < vehicles.m_size; i++)
             {
-                if ((vehicles.m_buffer[i].m_flags & Vehicle.Flags.Spawned) != Vehicle.Flags.None)
+                if ((vehicles.m_buffer[i].m_flags & Vehicle.Flags.Spawned) == Vehicle.Flags.Spawned)
                 {
                     if (prefabUpdateUnits == null || vehicles.m_buffer[i].Info == prefabUpdateUnits)
                     {
