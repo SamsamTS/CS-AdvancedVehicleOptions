@@ -122,38 +122,20 @@ namespace AdvancedVehicleOptions.GUI
 
         public static UIColorField CreateColorField(UIComponent parent)
         {
-            //UIColorField colorField = parent.AddUIComponent<UIColorField>();
             // Creating a ColorField from scratch is tricky. Cloning an existing one instead.
-            // Probably doesn't work when on main menu screen and such as no ColorField exists.
-            UIColorField colorField = UnityEngine.Object.Instantiate<GameObject>(UnityEngine.Object.FindObjectOfType<UIColorField>().gameObject).GetComponent<UIColorField>();
+
+            // Get the LineTemplate (PublicTransportDetailPanel)
+            UICustomControl template = UITemplateManager.Get<UICustomControl>("LineTemplate");
+            if (template == null) return null;
+            
+            // Extract the ColorField
+            UIColorField colorField = template.Find<UIColorField>("LineColor");
             parent.AttachUIComponent(colorField.gameObject);
 
-            // Reset most everything
-            colorField.anchor = UIAnchorStyle.Left | UIAnchorStyle.Top;
-            colorField.arbitraryPivotOffset = new Vector2(0, 0);
-            colorField.autoSize = false;
-            colorField.bringTooltipToFront = true;
-            colorField.builtinKeyNavigation = true;
-            colorField.canFocus = true;
-            colorField.enabled = true;
-            colorField.isEnabled = true;
-            colorField.isInteractive = true;
-            colorField.isLocalized = false;
-            colorField.isTooltipLocalized = false;
-            colorField.isVisible = true;
-            colorField.pivot = UIPivotPoint.TopLeft;
-            colorField.useDropShadow = false;
-            colorField.useGradient = false;
-            colorField.useGUILayout = true;
-            colorField.useOutline = false;
-            colorField.verticalAlignment = UIVerticalAlignment.Top;
+            // Destroy unneeded template
+            GameObject.DestroyImmediate(template);
 
             colorField.size = new Vector2(40f, 26f);
-            colorField.atlas = GetAtlas("InMapEditor");
-            colorField.normalBgSprite = "ColorPickerOutline";
-            colorField.normalFgSprite = "ColorPickerColor";
-            colorField.hoveredBgSprite = "ColorPickerOutlineHovered";
-            colorField.selectedColor = Color.black;
             colorField.pickerPosition = UIColorField.ColorPickerPosition.LeftAbove;
 
             return colorField;
