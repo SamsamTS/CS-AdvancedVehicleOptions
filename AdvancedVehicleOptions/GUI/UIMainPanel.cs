@@ -186,8 +186,8 @@ namespace AdvancedVehicleOptions.GUI
 
             DebugUtils.Log("Destroying UIMainPanel");
 
-            if (m_button != null) Destroy(m_button);
-            UIUtils.DestroyDeeply(m_optionPanel);
+            if (m_button != null) GameObject.Destroy(m_button);
+            GameObject.Destroy(m_optionPanel.gameObject);
         }
 
         private void SetupControls()

@@ -99,7 +99,6 @@ namespace AdvancedVehicleOptions
                     }
                     else if (value && isGameLoaded)
                     {
-                        GUI.UIUtils.DestroyDeeply(m_mainPanel);
                         GameObject.Destroy(m_gameObject);
                     }
                     AdvancedVehicleOptions.SaveConfig();
@@ -179,7 +178,6 @@ namespace AdvancedVehicleOptions
             {
                 //SaveConfig();
 
-                GUI.UIUtils.DestroyDeeply(m_mainPanel);
                 if (m_gameObject != null)
                     GameObject.Destroy(m_gameObject);
 
