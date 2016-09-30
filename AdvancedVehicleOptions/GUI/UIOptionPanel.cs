@@ -55,6 +55,11 @@ namespace AdvancedVehicleOptions.GUI
 
             if (m_color0 == null) return;
 
+            m_color0.relativePosition = new Vector3(13, 95 - 2);
+            m_color1.relativePosition = new Vector3(13, 120 - 2);
+            m_color2.relativePosition = new Vector3(158, 95 - 2);
+            m_color3.relativePosition = new Vector3(158, 120 - 2);
+
             m_maxSpeed.text = Mathf.RoundToInt(options.maxSpeed * 5).ToString();
             m_acceleration.text = options.acceleration.ToString();
             m_braking.text = options.braking.ToString();
