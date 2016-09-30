@@ -5,6 +5,8 @@ using ColossalFramework.UI;
 using System;
 using System.Reflection;
 
+using UIUtils = SamsamTS.UIUtils;
+
 namespace AdvancedVehicleOptions.GUI
 {
     public class UIMainPanel : UIPanel

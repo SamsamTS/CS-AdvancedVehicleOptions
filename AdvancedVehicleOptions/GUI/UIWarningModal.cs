@@ -2,6 +2,8 @@
 using ColossalFramework.UI;
 using UnityEngine;
 
+using UIUtils = SamsamTS.UIUtils;
+
 namespace AdvancedVehicleOptions.GUI
 {
     public class UIWarningModal : UIPanel

@@ -22,7 +22,7 @@ namespace AdvancedVehicleOptions.GUI
 
                 if (m_icon.spriteInfo != null)
                 {
-                    UIUtils.ResizeIcon(m_icon, new Vector2(30, 30));
+                    SamsamTS.UIUtils.ResizeIcon(m_icon, new Vector2(30, 30));
                     m_icon.relativePosition = new Vector3(10, 5);
                 }
             }

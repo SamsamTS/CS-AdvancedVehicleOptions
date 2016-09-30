@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 using UnityEngine;
 using ColossalFramework.UI;
 
-namespace AdvancedVehicleOptions.GUI
+namespace SamsamTS
 {
     public class UIUtils
     {
@@ -35,7 +35,7 @@ namespace AdvancedVehicleOptions.GUI
             checkBox.clipChildren = true;
 
             UISprite sprite = checkBox.AddUIComponent<UISprite>();
-            sprite.atlas = GetAtlas("Ingame"); 
+            sprite.atlas = GetAtlas("Ingame");
             sprite.spriteName = "ToggleBase";
             sprite.size = new Vector2(16f, 16f);
             sprite.relativePosition = Vector3.zero;
@@ -58,7 +58,7 @@ namespace AdvancedVehicleOptions.GUI
         {
             UITextField textField = parent.AddUIComponent<UITextField>();
 
-            textField.atlas = GetAtlas("Ingame"); 
+            textField.atlas = GetAtlas("Ingame");
             textField.size = new Vector2(90f, 20f);
             textField.padding = new RectOffset(6, 6, 3, 3);
             textField.builtinKeyNavigation = true;
@@ -130,20 +130,25 @@ namespace AdvancedVehicleOptions.GUI
             return dropDown;
         }
 
+        private static UIColorField _colorFIeldTemplate;
+
         public static UIColorField CreateColorField(UIComponent parent)
         {
             // Creating a ColorField from scratch is tricky. Cloning an existing one instead.
 
-            // Get the LineTemplate (PublicTransportDetailPanel)
-            UICustomControl template = UITemplateManager.Get<UICustomControl>("LineTemplate");
-            if (template == null) return null;
-            
-            // Extract the ColorField
-            UIColorField colorField = template.Find<UIColorField>("LineColor");
-            parent.AttachUIComponent(colorField.gameObject);
+            if (_colorFIeldTemplate == null)
+            {
+                // Get the LineTemplate (PublicTransportDetailPanel)
+                UIComponent template = UITemplateManager.Get("LineTemplate");
+                if (template == null) return null;
 
-            // Destroy unneeded template
-            GameObject.DestroyImmediate(template);
+                // Extract the ColorField
+                _colorFIeldTemplate = template.Find<UIColorField>("LineColor");
+                if (_colorFIeldTemplate == null) return null;
+            }
+
+            UIColorField colorField = UnityEngine.Object.Instantiate<GameObject>(_colorFIeldTemplate.gameObject).GetComponent<UIColorField>();
+            parent.AttachUIComponent(colorField.gameObject);
 
             colorField.size = new Vector2(40f, 26f);
             colorField.pickerPosition = UIColorField.ColorPickerPosition.LeftAbove;

@@ -2,6 +2,8 @@
 using ColossalFramework.UI;
 using ColossalFramework.Steamworks;
 
+using UIUtils = SamsamTS.UIUtils;
+
 namespace AdvancedVehicleOptions.GUI
 {
     public class UIVehicleItem : UIPanel, IUIFastListRow

@@ -2,6 +2,8 @@
 using ColossalFramework.UI;
 using ColossalFramework.Threading;
 
+using UIUtils = SamsamTS.UIUtils;
+
 namespace AdvancedVehicleOptions.GUI
 {
     public class UIOptionPanel : UIPanel
