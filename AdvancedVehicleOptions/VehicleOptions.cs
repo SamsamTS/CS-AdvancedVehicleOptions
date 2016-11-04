@@ -810,6 +810,7 @@ namespace AdvancedVehicleOptions
                 while (PrefabCollection<VehicleInfo>.GetPrefab(0) == null)
                     yield return null;
 
+                DefaultOptions.Clear();
                 for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
                     DefaultOptions.Store(PrefabCollection<VehicleInfo>.GetPrefab(i));
 
@@ -818,36 +819,37 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        private static Dictionary<VehicleInfo, DefaultOptions> m_default = new Dictionary<VehicleInfo, DefaultOptions>();
-        private static Dictionary<VehicleInfo, DefaultOptions> m_modded = new Dictionary<VehicleInfo, DefaultOptions>();
+        private static Dictionary<string, VehicleInfo> m_prefabs = new Dictionary<string, VehicleInfo>();
+        private static Dictionary<string, DefaultOptions> m_default = new Dictionary<string, DefaultOptions>();
+        private static Dictionary<string, DefaultOptions> m_modded = new Dictionary<string, DefaultOptions>();
         private static GameObject m_gameObject;
 
         public static ItemClass.Placement GetPlacementStyle(VehicleInfo prefab)
         {
-            if (m_default.ContainsKey(prefab))
-                return m_default[prefab].m_placementStyle;
+            if (m_default.ContainsKey(prefab.name))
+                return m_default[prefab.name].m_placementStyle;
             return (ItemClass.Placement)(-1);
         }
 
         public static VehicleInfo GetLastTrailer(VehicleInfo prefab)
         {
-            if (m_default.ContainsKey(prefab))
-                return m_default[prefab].m_lastTrailer;
+            if (m_default.ContainsKey(prefab.name))
+                return m_default[prefab.name].m_lastTrailer;
             return null;
         }
 
         public static int GetProbability(VehicleInfo prefab)
         {
-            if (m_default.ContainsKey(prefab))
-                return m_default[prefab].m_probability;
+            if (m_default.ContainsKey(prefab.name))
+                return m_default[prefab.name].m_probability;
             return 0;
         }
 
         public static void Store(VehicleInfo prefab)
         {
-            if (prefab != null && !m_default.ContainsKey(prefab))
+            if (prefab != null && !m_default.ContainsKey(prefab.name))
             {
-                m_default.Add(prefab, new DefaultOptions(prefab));
+                m_default.Add(prefab.name, new DefaultOptions(prefab));
             }
         }
 
@@ -867,8 +869,21 @@ namespace AdvancedVehicleOptions
             {
                 VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
 
-                if (prefab != null && !m_modded.ContainsKey(prefab))
-                    m_modded.Add(prefab, new DefaultOptions(prefab));
+                if (prefab != null && !m_modded.ContainsKey(prefab.name))
+                    m_modded.Add(prefab.name, new DefaultOptions(prefab));
+            }
+        }
+
+        public static void BuildVehicleInfoDictionary()
+        {
+            m_prefabs.Clear();
+
+            for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
+            {
+                VehicleInfo prefab = PrefabCollection<VehicleInfo>.GetPrefab(i);
+
+                if (prefab != null)
+                    m_prefabs[prefab.name] = prefab;
             }
         }
 
@@ -876,13 +891,13 @@ namespace AdvancedVehicleOptions
         {
             StringBuilder conflicts = new StringBuilder();
 
-            foreach (VehicleInfo prefab in m_default.Keys)
+            foreach (string name in m_default.Keys)
             {
                 VehicleOptions options = new VehicleOptions();
-                options.SetPrefab(prefab);
+                options.SetPrefab(m_prefabs[name]);
 
-                DefaultOptions modded = m_modded[prefab];
-                DefaultOptions stored = m_default[prefab];
+                DefaultOptions modded = m_modded[name];
+                DefaultOptions stored = m_default[name];
 
                 StringBuilder details = new StringBuilder();
 
@@ -938,7 +953,7 @@ namespace AdvancedVehicleOptions
             VehicleOptions options = new VehicleOptions();
             options.SetPrefab(prefab);
 
-            DefaultOptions stored = m_default[prefab];
+            DefaultOptions stored = m_default[prefab.name];
             if (stored == null) return;
 
             options.enabled = stored.m_enabled;
@@ -957,9 +972,9 @@ namespace AdvancedVehicleOptions
 
         public static void RestoreAll()
         {
-            foreach (VehicleInfo prefab in m_default.Keys)
+            foreach (string name in m_default.Keys)
             {
-                Restore(prefab);
+                Restore(m_prefabs[name]);
             }
             VehicleOptions.UpdateTransfertVehicles();
         }

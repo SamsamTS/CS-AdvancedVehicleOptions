@@ -63,7 +63,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.6.3";
+        public const string version = "1.6.4";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
@@ -145,6 +145,7 @@ namespace AdvancedVehicleOptions
 
                 try
                 {
+                    DefaultOptions.BuildVehicleInfoDictionary();
                     VehicleOptions.Clear();
                     m_mainPanel = m_gameObject.AddComponent<GUI.UIMainPanel>();
                     DebugUtils.Log("UIMainPanel created");
