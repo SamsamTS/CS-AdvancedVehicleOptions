@@ -35,15 +35,19 @@ namespace AdvancedVehicleOptions.GUI
 
         public static readonly string[] categoryList = { "All", "Citizen", "Bicycle",
             "Forestry", "Farming", "Ore", "Oil", "Industry",
-            "Police", "Prison", "Fire Safety", "Healthcare", "Deathcare", "Garbage", "Road Maintenance",
+            "Police", "Prison", "Fire Safety", "Disaster",
+            "Healthcare", "Deathcare", "Garbage", "Maintenance",
             "Taxi", "Bus", "Metro", "Tram", "Cargo Train", "Passenger Train",
-            "Cargo Ship", "Passenger Ship", "Plane" };
+            "Cargo Ship", "Passenger Ship", "Plane",
+            "Natural" };
 
         public static readonly string[] vehicleIconList = { "IconCitizenVehicle", "IconCitizenBicycleVehicle",
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
-              "ToolbarIconPolice", "IconPolicyDoubleSentences", "InfoIconFireSafety", "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage", "InfoIconMaintenance",
+              "ToolbarIconPolice", "IconPolicyDoubleSentences", "InfoIconFireSafety", "ToolbarIconFireDepartmentHovered",
+              "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage", "InfoIconMaintenance",
               "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTram", "IconServiceVehicle", "SubBarPublicTransportTrain",
-              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane" };
+              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane",
+              "InfoIconMeteorstrike"};
 
         public UIOptionPanel optionPanel
         {
@@ -252,7 +256,7 @@ namespace AdvancedVehicleOptions.GUI
             // Configuration file buttons
             UILabel configLabel = this.AddUIComponent<UILabel>();
             configLabel.text = "Configuration file:";
-            configLabel.textScale = 0.9f;
+            configLabel.textScale = 0.8f;
             configLabel.relativePosition = new Vector3(10, height - 60);
 
             m_reload = UIUtils.CreateButton(this);
@@ -308,9 +312,9 @@ namespace AdvancedVehicleOptions.GUI
             {
                 eventMouseMove += RotateCamera;
                 if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations)
-                    m_previewRenderer.Render(m_previewColor);
+                    m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab, m_previewColor);
                 else
-                    m_previewRenderer.Render();
+                    m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab);
 
             };
 
@@ -318,18 +322,18 @@ namespace AdvancedVehicleOptions.GUI
             {
                 eventMouseMove -= RotateCamera;
                 if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations)
-                    m_previewRenderer.Render(m_previewColor);
+                    m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab, m_previewColor);
                 else
-                    m_previewRenderer.Render();
+                    m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab);
             };
 
             panel.eventMouseWheel += (c, p) =>
             {
                 m_previewRenderer.zoom -= Mathf.Sign(p.wheelDelta) * 0.25f;
                 if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations)
-                    m_previewRenderer.Render(m_previewColor);
+                    m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab, m_previewColor);
                 else
-                    m_previewRenderer.Render();
+                    m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab);
             };
         }
 
@@ -337,9 +341,9 @@ namespace AdvancedVehicleOptions.GUI
         {
             m_previewRenderer.cameraRotation -= p.moveDelta.x / m_preview.width * 360f;
             if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations)
-                m_previewRenderer.Render(m_previewColor);
+                m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab, m_previewColor);
             else
-                m_previewRenderer.Render();
+                m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab);
         }
 
         private void PopulateList()
@@ -401,7 +405,6 @@ namespace AdvancedVehicleOptions.GUI
 
         protected void OnSelectedItemChanged(UIComponent component, int i)
         {
-            m_previewRenderer.mesh = null;
             m_seekStart = 0;
 
             VehicleOptions options = m_fastList.rowsData[i] as VehicleOptions;
@@ -409,16 +412,14 @@ namespace AdvancedVehicleOptions.GUI
             m_optionPanel.Show(options);
             m_followVehicle.isVisible = m_preview.parent.isVisible = true;
 
-            m_previewRenderer.mesh = options.prefab.m_mesh;
-            m_previewRenderer.material = options.prefab.m_material;
             m_previewColor = options.color0;
             m_previewColor.a = 0; // Fixes the wrong lighting on one half of the vehicle
             m_previewRenderer.cameraRotation = -60;// 120f;
             m_previewRenderer.zoom = 3f;
             if (options.useColorVariations)
-                m_previewRenderer.Render(m_previewColor);
+                m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab, m_previewColor);
             else
-                m_previewRenderer.Render();
+                m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab);
         }
 
         protected void OnEnableStateChanged(UIComponent component, bool state)
@@ -428,15 +429,19 @@ namespace AdvancedVehicleOptions.GUI
 
         public void ChangePreviewColor(Color color)
         {
-            if (m_optionPanel.m_options != null && m_optionPanel.m_options.useColorVariations &&
-                m_previewRenderer.material != null && m_previewColor != color)
+            if (m_optionPanel.m_options != null)
             {
-                m_previewColor = color;
-                m_previewColor.a = 0; // Fixes the wrong lighting on one half of the vehicle
-                m_previewRenderer.Render(m_previewColor);
+                if (m_optionPanel.m_options.useColorVariations && m_previewColor != color)
+                {
+                    m_previewColor = color;
+                    m_previewColor.a = 0; // Fixes the wrong lighting on one half of the vehicle
+                    m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab, m_previewColor);
+                }
+                else
+                {
+                    m_previewRenderer.RenderVehicle(m_optionPanel.m_options.prefab);
+                }
             }
-            else
-                m_previewRenderer.Render();
         }
     }
 

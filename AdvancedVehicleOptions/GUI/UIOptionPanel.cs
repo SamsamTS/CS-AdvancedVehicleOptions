@@ -102,7 +102,7 @@ namespace AdvancedVehicleOptions.GUI
             // Max Speed
             UILabel maxSpeedLabel = panel.AddUIComponent<UILabel>();
             maxSpeedLabel.text = "Maximum speed:";
-            maxSpeedLabel.textScale = 0.9f;
+            maxSpeedLabel.textScale = 0.8f;
             maxSpeedLabel.relativePosition = new Vector3(15, 15);
 
             m_maxSpeed = UIUtils.CreateTextField(panel);
@@ -113,13 +113,13 @@ namespace AdvancedVehicleOptions.GUI
 
             UILabel kmh = panel.AddUIComponent<UILabel>();
             kmh.text = "km/h";
-            kmh.textScale = 0.9f;
+            kmh.textScale = 0.8f;
             kmh.relativePosition = new Vector3(95, 40);
 
             // Acceleration
             UILabel accelerationLabel = panel.AddUIComponent<UILabel>();
             accelerationLabel.text = "Acceleration/Brake:";
-            accelerationLabel.textScale = 0.9f;
+            accelerationLabel.textScale = 0.8f;
             accelerationLabel.relativePosition = new Vector3(160, 15);
 
             m_acceleration = UIUtils.CreateTextField(panel);
@@ -199,7 +199,7 @@ namespace AdvancedVehicleOptions.GUI
 
             UILabel capacityLabel = capacityPanel.AddUIComponent<UILabel>();
             capacityLabel.text = "Capacity:";
-            capacityLabel.textScale = 0.9f;
+            capacityLabel.textScale = 0.8f;
             capacityLabel.relativePosition = Vector3.zero;
 
             m_capacity = UIUtils.CreateTextField(capacityPanel);
@@ -218,7 +218,7 @@ namespace AdvancedVehicleOptions.GUI
             // Remove Vehicles
             m_removeLabel = this.AddUIComponent<UILabel>();
             m_removeLabel.text = "Remove vehicles:";
-            m_removeLabel.textScale = 0.9f;
+            m_removeLabel.textScale = 0.8f;
             m_removeLabel.relativePosition = new Vector3(10, height - 60);
 
             m_clearVehicles = UIUtils.CreateButton(this);

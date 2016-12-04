@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using ColossalFramework.UI;
-using ColossalFramework.Steamworks;
+using ColossalFramework.PlatformServices;
 
 using UIUtils = SamsamTS.UIUtils;
 
@@ -59,7 +59,7 @@ namespace AdvancedVehicleOptions.GUI
             m_disabled.relativePosition = new Vector3(10, Mathf.Floor((height - m_disabled.height) / 2));
 
             m_name = AddUIComponent<UILabel>();
-            m_name.textScale = 0.9f;
+            m_name.textScale = 0.8f;
             m_name.relativePosition = new Vector3(55, 13);
 
             m_steamIcon = AddUIComponent<UISprite>();
@@ -69,12 +69,12 @@ namespace AdvancedVehicleOptions.GUI
 
             UIUtils.ResizeIcon(m_steamIcon, new Vector2(25, 25));
 
-            if (Steam.IsOverlayEnabled())
+            if (PlatformService.IsOverlayEnabled())
             {
                 m_steamIcon.eventClick += (c, p) =>
                 {
                     p.Use();
-                    Steam.ActivateGameOverlayToWorkshopItem(new PublishedFileId(ulong.Parse(m_options.steamID)));
+                    PlatformService.ActivateGameOverlayToWorkshopItem(new PublishedFileId(ulong.Parse(m_options.steamID)));
                 };
             }
         }

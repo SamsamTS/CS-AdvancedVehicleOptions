@@ -28,6 +28,7 @@ namespace AdvancedVehicleOptions
             Police,
             Prison,
             FireSafety,
+            Disaster,
             Healthcare,
             Deathcare,
             Garbage,
@@ -40,7 +41,8 @@ namespace AdvancedVehicleOptions
             TransportTrain,
             CargoShip,
             TransportShip,
-            TransportPlane
+            TransportPlane,
+            Natural
         }
 
         #region serialized
@@ -119,7 +121,7 @@ namespace AdvancedVehicleOptions
                 VehicleInfo newTrailer = value ? m_prefab : DefaultOptions.GetLastTrailer(m_prefab);
                 int last = m_prefab.m_trailers.Length - 1;
 
-                if (m_prefab.m_trailers[last].m_info == newTrailer) return;
+                if (m_prefab.m_trailers[last].m_info == newTrailer || newTrailer == null) return;
 
                 m_prefab.m_trailers[last].m_info = newTrailer;
 
@@ -515,20 +517,23 @@ namespace AdvancedVehicleOptions
             for (ushort i = 0; i < vehicles.m_size; i++)
             {
                 VehicleInfo prefab = vehicles.m_buffer[i].Info;
-                bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train;
-                bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0 && prefab.m_trailers != null && prefab.m_trailers.Length > 0;
-                if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isTrain && isLeading)
+                if (prefab != null)
                 {
-                    ushort last = vehicles.m_buffer[i].GetLastVehicle((ushort)i);
-                    ushort oldPrefabID = vehicles.m_buffer[last].m_infoIndex;
-                    ushort newPrefabID = (ushort)prefab.m_trailers[prefab.m_trailers.Length - 1].m_info.m_prefabDataIndex;
-                    if (oldPrefabID != newPrefabID)
+                    bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train;
+                    bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0 && prefab.m_trailers != null && prefab.m_trailers.Length > 0;
+                    if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isTrain && isLeading)
                     {
-                        vehicles.m_buffer[last].m_infoIndex = newPrefabID;
-                        vehicles.m_buffer[last].m_flags = vehicles.m_buffer[vehicles.m_buffer[last].m_leadingVehicle].m_flags;
+                        ushort last = vehicles.m_buffer[i].GetLastVehicle((ushort)i);
+                        ushort oldPrefabID = vehicles.m_buffer[last].m_infoIndex;
+                        ushort newPrefabID = (ushort)prefab.m_trailers[prefab.m_trailers.Length - 1].m_info.m_prefabDataIndex;
+                        if (oldPrefabID != newPrefabID)
+                        {
+                            vehicles.m_buffer[last].m_infoIndex = newPrefabID;
+                            vehicles.m_buffer[last].m_flags = vehicles.m_buffer[vehicles.m_buffer[last].m_leadingVehicle].m_flags;
 
-                        if (prefab.m_trailers[prefab.m_trailers.Length - 1].m_info == prefab)
-                            vehicles.m_buffer[last].m_flags |= Vehicle.Flags.Inverted;
+                            if (prefab.m_trailers[prefab.m_trailers.Length - 1].m_info == prefab)
+                                vehicles.m_buffer[last].m_flags |= Vehicle.Flags.Inverted;
+                        }
                     }
                 }
                 if (i % 256 == 255) yield return null;
@@ -617,8 +622,13 @@ namespace AdvancedVehicleOptions
                         return Category.Deathcare;
                 case ItemClass.Service.Garbage:
                     return Category.Garbage;
+                case ItemClass.Service.Water:
                 case ItemClass.Service.Road:
                     return Category.Road;
+                case ItemClass.Service.Disaster:
+                    return Category.Disaster;
+                case ItemClass.Service.Natural:
+                    return Category.Natural;
             }
 
             switch (prefab.m_class.m_subService)
@@ -797,12 +807,7 @@ namespace AdvancedVehicleOptions
         {
             public void Awake()
             {
-                DontDestroyOnLoad(this);
-            }
-
-            private void OnLevelWasLoaded(int level)
-            {
-                if (level == 6) StartCoroutine("Store");
+                StartCoroutine("Store");
             }
 
             private IEnumerator Store()

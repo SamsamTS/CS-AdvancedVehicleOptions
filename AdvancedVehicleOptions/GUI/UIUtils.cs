@@ -17,7 +17,7 @@ namespace SamsamTS
 
             button.atlas = GetAtlas("Ingame");
             button.size = new Vector2(90f, 30f);
-            button.textScale = 0.9f;
+            button.textScale = 0.8f;
             button.normalBgSprite = "ButtonMenu";
             button.hoveredBgSprite = "ButtonMenuHovered";
             button.pressedBgSprite = "ButtonMenuPressed";
@@ -48,7 +48,7 @@ namespace SamsamTS
 
             checkBox.label = checkBox.AddUIComponent<UILabel>();
             checkBox.label.text = " ";
-            checkBox.label.textScale = 0.9f;
+            checkBox.label.textScale = 0.8f;
             checkBox.label.relativePosition = new Vector3(22f, 2f);
 
             return checkBox;

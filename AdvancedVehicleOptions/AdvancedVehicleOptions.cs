@@ -63,7 +63,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.6.4";
+        public const string version = "1.6.5";
     }
     
     public class AdvancedVehicleOptions : LoadingExtensionBase
