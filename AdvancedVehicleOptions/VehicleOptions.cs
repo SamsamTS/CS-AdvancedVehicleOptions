@@ -116,7 +116,7 @@ namespace AdvancedVehicleOptions
             }
             set
             {
-                if (m_prefab == null || !hasTrailer || (m_prefab.m_vehicleType != VehicleInfo.VehicleType.Train && m_prefab.m_vehicleType != VehicleInfo.VehicleType.Tram)) return;
+                if (m_prefab == null || !isTrain) return;
 
                 VehicleInfo newTrailer = value ? m_prefab : DefaultOptions.GetLastTrailer(m_prefab);
                 int last = m_prefab.m_trailers.Length - 1;
@@ -369,6 +369,11 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.m_trailers != null && m_prefab.m_trailers.Length > 0; }
         }
 
+        public bool isTrain
+        {
+            get { return hasTrailer && (m_prefab.m_vehicleType == VehicleInfo.VehicleType.Train || m_prefab.m_vehicleType == VehicleInfo.VehicleType.Tram || m_prefab.m_vehicleType == VehicleInfo.VehicleType.Metro); }
+        }
+
         public bool isTrailer
         {
             get { return m_engine != null; }
@@ -519,7 +524,7 @@ namespace AdvancedVehicleOptions
                 VehicleInfo prefab = vehicles.m_buffer[i].Info;
                 if (prefab != null)
                 {
-                    bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train;
+                    bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train || prefab.m_vehicleType == VehicleInfo.VehicleType.Tram || prefab.m_vehicleType == VehicleInfo.VehicleType.Metro;
                     bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0 && prefab.m_trailers != null && prefab.m_trailers.Length > 0;
                     if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isTrain && isLeading)
                     {

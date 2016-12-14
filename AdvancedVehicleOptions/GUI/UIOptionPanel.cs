@@ -75,7 +75,7 @@ namespace AdvancedVehicleOptions.GUI
             m_enabled.isChecked = options.enabled;
             //m_enabled.isVisible = !options.isTrailer;
             m_addBackEngine.isChecked = options.addBackEngine;
-            m_addBackEngine.isVisible = (options.prefab.m_vehicleType == VehicleInfo.VehicleType.Train || options.prefab.m_vehicleType == VehicleInfo.VehicleType.Tram) && options.hasTrailer;
+            m_addBackEngine.isVisible = options.isTrain;
 
             m_capacity.text = options.capacity.ToString();
             m_capacity.parent.isVisible = options.hasCapacity;
