@@ -580,28 +580,38 @@ namespace AdvancedVehicleOptions
             Array16<Vehicle> vehicles = VehicleManager.instance.m_vehicles;
             for (ushort i = 0; i < vehicles.m_size; i++)
             {
-                VehicleInfo prefab = vehicles.m_buffer[i].Info;
-                if (prefab != null)
+                try
                 {
-                    bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train || prefab.m_vehicleType == VehicleInfo.VehicleType.Tram || prefab.m_vehicleType == VehicleInfo.VehicleType.Metro;
-                    bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0 && prefab.m_trailers != null && prefab.m_trailers.Length > 0;
-                    if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isTrain && isLeading)
+                    VehicleInfo prefab = vehicles.m_buffer[i].Info;
+                    if (prefab != null)
                     {
-                        ushort last = vehicles.m_buffer[i].GetLastVehicle((ushort)i);
-                        ushort oldPrefabID = vehicles.m_buffer[last].m_infoIndex;
-                        ushort newPrefabID = (ushort)prefab.m_trailers[prefab.m_trailers.Length - 1].m_info.m_prefabDataIndex;
-                        if (oldPrefabID != newPrefabID)
+                        bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train || prefab.m_vehicleType == VehicleInfo.VehicleType.Tram || prefab.m_vehicleType == VehicleInfo.VehicleType.Metro;
+                        bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0 && prefab.m_trailers != null && prefab.m_trailers.Length > 0;
+                        if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isTrain && isLeading && prefab.m_trailers[prefab.m_trailers.Length - 1].m_info != null)
                         {
-                            vehicles.m_buffer[last].m_infoIndex = newPrefabID;
-                            vehicles.m_buffer[last].m_flags = vehicles.m_buffer[vehicles.m_buffer[last].m_leadingVehicle].m_flags;
+                            ushort last = vehicles.m_buffer[i].GetLastVehicle((ushort)i);
+                            ushort oldPrefabID = vehicles.m_buffer[last].m_infoIndex;
+                            ushort newPrefabID = (ushort)prefab.m_trailers[prefab.m_trailers.Length - 1].m_info.m_prefabDataIndex;
+                            if (oldPrefabID != newPrefabID)
+                            {
+                                vehicles.m_buffer[last].m_infoIndex = newPrefabID;
+                                vehicles.m_buffer[last].m_flags = vehicles.m_buffer[vehicles.m_buffer[last].m_leadingVehicle].m_flags;
 
-                            if (prefab.m_trailers[prefab.m_trailers.Length - 1].m_info == prefab)
-                                vehicles.m_buffer[last].m_flags |= Vehicle.Flags.Inverted;
+                                if (prefab.m_trailers[prefab.m_trailers.Length - 1].m_info == prefab)
+                                    vehicles.m_buffer[last].m_flags |= Vehicle.Flags.Inverted;
+                            }
                         }
                     }
+
+                }
+                catch (Exception e)
+                {
+                    DebugUtils.Log("Couldn't update back engine :");
+                    Debug.LogError(e);
                 }
                 if (i % 256 == 255) yield return null;
             }
+
             prefabUpdateEngine = null;
         }
 
