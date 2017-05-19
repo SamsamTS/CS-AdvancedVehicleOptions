@@ -37,7 +37,8 @@ namespace AdvancedVehicleOptions.GUI
             "Forestry", "Farming", "Ore", "Oil", "Industry",
             "Police", "Prison", "Fire Safety", "Disaster",
             "Healthcare", "Deathcare", "Garbage", "Maintenance",
-            "Taxi", "Bus", "Metro", "Tram", "Cargo Train", "Passenger Train",
+            "Taxi", "Bus", "Metro", "Tram", "Monorail", "CableCar",
+            "Cargo Train", "Passenger Train",
             "Cargo Ship", "Passenger Ship", "Plane",
             "Natural" };
 
@@ -45,7 +46,8 @@ namespace AdvancedVehicleOptions.GUI
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
               "ToolbarIconPolice", "IconPolicyDoubleSentences", "InfoIconFireSafety", "ToolbarIconFireDepartmentHovered",
               "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage", "InfoIconMaintenance",
-              "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTram", "IconServiceVehicle", "SubBarPublicTransportTrain",
+              "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTram", "SubBarPublicTransportMonorail", "SubBarPublicTransportCableCar",
+              "IconServiceVehicle", "SubBarPublicTransportTrain",
               "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane",
               "InfoIconMeteorstrike"};
 

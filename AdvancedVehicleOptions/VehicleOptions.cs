@@ -37,6 +37,8 @@ namespace AdvancedVehicleOptions
             TransportBus,
             TransportMetro,
             Tram,
+            Monorail,
+            CableCar,
             CargoTrain,
             TransportTrain,
             CargoShip,
@@ -264,6 +266,12 @@ namespace AdvancedVehicleOptions
                 ai = m_prefab.m_vehicleAI as SnowTruckAI;
                 if (ai != null) return ((SnowTruckAI)ai).m_cargoCapacity;
 
+                ai = m_prefab.m_vehicleAI as CableCarAI;
+                if (ai != null) return ((CableCarAI)ai).m_passengerCapacity;
+
+                ai = m_prefab.m_vehicleAI as PassengerFerryAI;
+                if (ai != null) return ((PassengerFerryAI)ai).m_passengerCapacity;
+
                 return -1;
             }
             set
@@ -319,6 +327,12 @@ namespace AdvancedVehicleOptions
 
                 ai = m_prefab.m_vehicleAI as SnowTruckAI;
                 if (ai != null) { ((SnowTruckAI)ai).m_cargoCapacity = value; return; }
+
+                ai = m_prefab.m_vehicleAI as CableCarAI;
+                if (ai != null) { ((CableCarAI)ai).m_passengerCapacity = value; return; }
+
+                ai = m_prefab.m_vehicleAI as PassengerFerryAI;
+                if (ai != null) { ((PassengerFerryAI)ai).m_passengerCapacity = value; return; }
             }
         }
         #endregion
@@ -369,7 +383,7 @@ namespace AdvancedVehicleOptions
 
         public bool isTrain
         {
-            get { return hasTrailer && (m_prefab.m_vehicleType == VehicleInfo.VehicleType.Train || m_prefab.m_vehicleType == VehicleInfo.VehicleType.Tram || m_prefab.m_vehicleType == VehicleInfo.VehicleType.Metro); }
+            get { return hasTrailer && (m_prefab.m_vehicleType == VehicleInfo.VehicleType.Train || m_prefab.m_vehicleType == VehicleInfo.VehicleType.Tram || m_prefab.m_vehicleType == VehicleInfo.VehicleType.Metro || m_prefab.m_vehicleType == VehicleInfo.VehicleType.Monorail); }
         }
 
         public bool isTrailer
@@ -425,7 +439,8 @@ namespace AdvancedVehicleOptions
                         else
                             return Category.CargoTrain;
                     case ItemClass.SubService.PublicTransportShip:
-                        if (prefab.m_class.m_level == ItemClass.Level.Level1)
+                        if (prefab.m_class.m_level == ItemClass.Level.Level1 ||
+                            prefab.m_class.m_level == ItemClass.Level.Level2)
                             return Category.TransportShip;
                         else
                             return Category.CargoShip;
@@ -445,6 +460,10 @@ namespace AdvancedVehicleOptions
                         return Category.IndustryGeneric;
                     case ItemClass.SubService.PublicTransportTram:
                         return Category.Tram;
+                    case ItemClass.SubService.PublicTransportMonorail:
+                        return Category.Monorail;
+                    case ItemClass.SubService.PublicTransportCableCar:
+                        return Category.CableCar;
                     case ItemClass.SubService.ResidentialHigh:
                         return Category.Bicycle;
                 }
@@ -585,7 +604,7 @@ namespace AdvancedVehicleOptions
                     VehicleInfo prefab = vehicles.m_buffer[i].Info;
                     if (prefab != null)
                     {
-                        bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train || prefab.m_vehicleType == VehicleInfo.VehicleType.Tram || prefab.m_vehicleType == VehicleInfo.VehicleType.Metro;
+                        bool isTrain = prefab.m_vehicleType == VehicleInfo.VehicleType.Train || prefab.m_vehicleType == VehicleInfo.VehicleType.Tram || prefab.m_vehicleType == VehicleInfo.VehicleType.Metro || prefab.m_vehicleType == VehicleInfo.VehicleType.Monorail;
                         bool isLeading = vehicles.m_buffer[i].m_leadingVehicle == 0 && prefab.m_trailers != null && prefab.m_trailers.Length > 0;
                         if ((prefabUpdateEngine == null || prefab == prefabUpdateEngine) && isTrain && isLeading && prefab.m_trailers[prefab.m_trailers.Length - 1].m_info != null)
                         {
