@@ -272,6 +272,9 @@ namespace AdvancedVehicleOptions
                 ai = m_prefab.m_vehicleAI as PassengerFerryAI;
                 if (ai != null) return ((PassengerFerryAI)ai).m_passengerCapacity;
 
+                ai = m_prefab.m_vehicleAI as PassengerBlimpAI;
+                if (ai != null) return ((PassengerBlimpAI)ai).m_passengerCapacity;
+
                 return -1;
             }
             set
@@ -333,6 +336,9 @@ namespace AdvancedVehicleOptions
 
                 ai = m_prefab.m_vehicleAI as PassengerFerryAI;
                 if (ai != null) { ((PassengerFerryAI)ai).m_passengerCapacity = value; return; }
+
+                ai = m_prefab.m_vehicleAI as PassengerBlimpAI;
+                if (ai != null) { ((PassengerBlimpAI)ai).m_passengerCapacity = value; return; }
             }
         }
         #endregion
@@ -524,6 +530,9 @@ namespace AdvancedVehicleOptions
 
             ai = vehicleAI as PassengerFerryAI;
             if (ai != null) return ((PassengerFerryAI)ai).m_passengerCapacity;
+
+            ai = vehicleAI as PassengerBlimpAI;
+            if (ai != null) return ((PassengerBlimpAI)ai).m_passengerCapacity;
 
             /*ai = prefab.m_vehicleAI as PoliceCarAI;
             if (ai != null) return ((PoliceCarAI)ai).m_policeCount;*/
