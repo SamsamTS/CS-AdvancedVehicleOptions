@@ -44,6 +44,7 @@ namespace AdvancedVehicleOptions
             CargoShip,
             TransportShip,
             TransportPlane,
+            Monument,
             Natural
         }
 
@@ -429,6 +430,8 @@ namespace AdvancedVehicleOptions
                         return Category.Road;
                     case ItemClass.Service.Disaster:
                         return Category.Disaster;
+                    case ItemClass.Service.Monument:
+                        return Category.Monument;
                     case ItemClass.Service.Natural:
                         return Category.Natural;
                 }

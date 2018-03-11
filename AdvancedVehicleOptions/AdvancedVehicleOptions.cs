@@ -63,7 +63,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.7.5";
+        public const string version = "1.7.6";
     }
 
     public class AdvancedVehicleOptionsLoader : LoadingExtensionBase
@@ -316,7 +316,7 @@ namespace AdvancedVehicleOptions
 
             string warning = "";
 
-            for (int i = 0; i <= (int)VehicleOptions.Category.TransportPlane; i++)
+            for (int i = 0; i < (int)VehicleOptions.Category.Natural; i++)
                 if (!CheckServiceValidity((VehicleOptions.Category)i)) warning += "- " + GUI.UIMainPanel.categoryList[i + 1] + "\n";
 
             if(warning != "")

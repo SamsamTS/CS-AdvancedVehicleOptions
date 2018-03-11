@@ -39,7 +39,7 @@ namespace AdvancedVehicleOptions.GUI
             "Healthcare", "Deathcare", "Garbage", "Maintenance",
             "Taxi", "Bus", "Metro", "Tram", "Monorail", "CableCar",
             "Cargo Train", "Passenger Train",
-            "Cargo Ship", "Passenger Ship", "Plane",
+            "Cargo Ship", "Passenger Ship", "Plane", "Monument",
             "Natural" };
 
         public static readonly string[] vehicleIconList = { "IconCitizenVehicle", "IconCitizenBicycleVehicle",
@@ -48,7 +48,7 @@ namespace AdvancedVehicleOptions.GUI
               "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage", "InfoIconMaintenance",
               "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTram", "SubBarPublicTransportMonorail", "SubBarPublicTransportCableCar",
               "IconServiceVehicle", "SubBarPublicTransportTrain",
-              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane",
+              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane", "ToolbarIconMonuments",
               "InfoIconMeteorstrike"};
 
         public UIOptionPanel optionPanel
