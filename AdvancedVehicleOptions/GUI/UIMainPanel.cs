@@ -15,8 +15,8 @@ namespace AdvancedVehicleOptions.GUI
         private UIDropDown m_category;
         private UITextField m_search;
         private UIFastList m_fastList;
-        private UIButton m_reload;
-        private UIButton m_save;
+        private UIButton m_import;
+        private UIButton m_export;
         private UITextureSprite m_preview;
         private UISprite m_followVehicle;
         private UIOptionPanel m_optionPanel;
@@ -244,15 +244,15 @@ namespace AdvancedVehicleOptions.GUI
             configLabel.textScale = 0.8f;
             configLabel.relativePosition = new Vector3(10, height - 60);
 
-            m_reload = UIUtils.CreateButton(this);
-            m_reload.text = "Reload";
-            m_reload.tooltip = "Discard any changes since the last time the configuration has been saved";
-            m_reload.relativePosition = new Vector3(10, height - 40);
+            m_import = UIUtils.CreateButton(this);
+            m_import.text = "Import";
+            m_import.tooltip = "Import the configuration";
+            m_import.relativePosition = new Vector3(10, height - 40);
 
-            m_save = UIUtils.CreateButton(this);
-            m_save.text = "Save";
-            m_save.tooltip = "Save the configuration";
-            m_save.relativePosition = new Vector3(105, height - 40);
+            m_export = UIUtils.CreateButton(this);
+            m_export.text = "Export";
+            m_export.tooltip = "Export the configuration";
+            m_export.relativePosition = new Vector3(105, height - 40);
 
             // Preview
             UIPanel panel = AddUIComponent<UIPanel>();
@@ -290,8 +290,13 @@ namespace AdvancedVehicleOptions.GUI
             // Event handlers
             m_fastList.eventSelectedIndexChanged += OnSelectedItemChanged; 
             m_optionPanel.eventEnableCheckChanged += OnEnableStateChanged;
-            m_reload.eventClick += (c, t) => { AdvancedVehicleOptions.RestoreBackup(); AdvancedVehicleOptions.LoadConfig(); optionList = AdvancedVehicleOptions.config.options; };
-            m_save.eventClick += (c, t) => AdvancedVehicleOptions.SaveBackup();
+            m_import.eventClick += (c, t) =>
+            {
+                DefaultOptions.RestoreAll();
+                AdvancedVehicleOptions.ImportConfig();
+                optionList = AdvancedVehicleOptions.config.options;
+            };
+            m_export.eventClick += (c, t) => AdvancedVehicleOptions.ExportConfig();
 
             panel.eventMouseDown += (c, p) =>
             {

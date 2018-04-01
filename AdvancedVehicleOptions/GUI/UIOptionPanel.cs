@@ -274,7 +274,6 @@ namespace AdvancedVehicleOptions.GUI
                 m_initialized = false;
                 bool isEnabled = m_options.enabled;
                 DefaultOptions.Restore(m_options.prefab);
-                AdvancedVehicleOptions.SaveConfig();
                 VehicleOptions.UpdateTransfertVehicles();
 
                 VehicleOptions.prefabUpdateEngine = m_options.prefab;
@@ -342,7 +341,6 @@ namespace AdvancedVehicleOptions.GUI
                 (parent as UIMainPanel).ChangePreviewColor(m_color0.selectedColor);
             }
 
-            AdvancedVehicleOptions.SaveConfig();
             m_initialized = true;
         }
 
@@ -353,7 +351,6 @@ namespace AdvancedVehicleOptions.GUI
 
             m_options.maxSpeed = float.Parse(text) / 5f;
 
-            AdvancedVehicleOptions.SaveConfig();
             m_initialized = true;
         }
 
@@ -364,7 +361,6 @@ namespace AdvancedVehicleOptions.GUI
 
             m_options.acceleration = float.Parse(text);
 
-            AdvancedVehicleOptions.SaveConfig();
             m_initialized = true;
         }
 
@@ -375,7 +371,6 @@ namespace AdvancedVehicleOptions.GUI
 
             m_options.braking = float.Parse(text);
 
-            AdvancedVehicleOptions.SaveConfig();
             m_initialized = true;
         }
 
@@ -388,7 +383,6 @@ namespace AdvancedVehicleOptions.GUI
             VehicleOptions.prefabUpdateUnits = m_options.prefab;
             new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
 
-            AdvancedVehicleOptions.SaveConfig();
             m_initialized = true;
         }
 
@@ -409,7 +403,6 @@ namespace AdvancedVehicleOptions.GUI
             m_color2_hex.text = m_options.color2.ToString();
             m_color3_hex.text = m_options.color3.ToString();
 
-            AdvancedVehicleOptions.SaveConfig();
             m_initialized = true;
         }
 

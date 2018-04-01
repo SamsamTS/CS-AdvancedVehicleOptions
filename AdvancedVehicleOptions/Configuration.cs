@@ -1,18 +1,17 @@
-﻿using UnityEngine;
+﻿using ColossalFramework.IO;
 
 using System;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using System.ComponentModel;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace AdvancedVehicleOptions
 {
     [XmlType("ArrayOfVehicleOptions")]
     [Serializable]
-    public class Configuration
+    public class Configuration : IDataContainer
     {
         public class VehicleData
         {
@@ -45,15 +44,6 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        [XmlAttribute]
-        public string version;
-
-        [XmlAttribute, DefaultValue(false)]
-        public bool hideGUI = false;
-
-        [XmlAttribute, DefaultValue(true)]
-        public bool onLoadCheck = true;
-
         [XmlElement("VehicleOptions")]
         public VehicleData[] data;
 
@@ -62,11 +52,82 @@ namespace AdvancedVehicleOptions
 
         private List<VehicleData> m_defaultVehicles = new List<VehicleData>();
 
+        // Serialize to save
+        public void Serialize(DataSerializer s)
+        {
+            try
+            {
+                int count = options.Length;
+                s.WriteInt32(count);
+
+                for (int i = 0; i < count; i++)
+                {
+                    s.WriteUniqueString(options[i].name);
+                    DebugUtils.Log(options[i].name);
+                    s.WriteBool(options[i].enabled);
+                    s.WriteBool(options[i].addBackEngine);
+                    s.WriteFloat(options[i].maxSpeed);
+                    s.WriteFloat(options[i].acceleration);
+                    s.WriteFloat(options[i].braking);
+                    s.WriteBool(options[i].useColorVariations);
+                    s.WriteUniqueString(options[i].color0.Value);
+                    s.WriteUniqueString(options[i].color1.Value);
+                    s.WriteUniqueString(options[i].color2.Value);
+                    s.WriteUniqueString(options[i].color3.Value);
+                    s.WriteInt32(options[i].capacity);
+                }
+            }
+            catch (Exception e)
+            {
+                DebugUtils.LogException(e);
+            }
+        }
+
+        public void Deserialize(DataSerializer s)
+        {
+            try
+            {
+                options = null;
+                data = null;
+
+                int count = s.ReadInt32();
+                data = new VehicleData[count];
+
+                for (int i = 0; i < count; i++)
+                {
+                    data[i] = new VehicleData();
+                    data[i].name = s.ReadUniqueString();
+                    data[i].enabled = s.ReadBool();
+                    data[i].addBackEngine = s.ReadBool();
+                    data[i].maxSpeed = s.ReadFloat();
+                    data[i].acceleration = s.ReadFloat();
+                    data[i].braking = s.ReadFloat();
+                    data[i].useColorVariations = s.ReadBool();
+                    data[i].color0 = new HexaColor(s.ReadUniqueString());
+                    data[i].color1 = new HexaColor(s.ReadUniqueString());
+                    data[i].color2 = new HexaColor(s.ReadUniqueString());
+                    data[i].color3 = new HexaColor(s.ReadUniqueString());
+                    data[i].capacity = s.ReadInt32();
+                }
+            }
+            catch (Exception e)
+            {
+                // Couldn't Deserialize
+                DebugUtils.Warning("Couldn't deserialize");
+                DebugUtils.LogException(e);
+            }
+        }
+
+        public void AfterDeserialize(DataSerializer s)
+        {
+        }
+
+        // Serialize to file
         public void Serialize(string filename)
         {
             try
             {
-                if (AdvancedVehicleOptions.isGameLoaded) ConvertOptions();
+                if (AdvancedVehicleOptions.isGameLoaded) OptionsToData();
 
                 // Add back default vehicle options that might not exist on the map
                 // I.E. Snowplow on non-snowy maps
@@ -136,10 +197,7 @@ namespace AdvancedVehicleOptions
 
             if(config != null)
             {
-                version = config.version;
                 data = config.data;
-                hideGUI = config.hideGUI;
-                onLoadCheck = config.onLoadCheck;
 
                 if(data != null)
                 {
@@ -154,11 +212,11 @@ namespace AdvancedVehicleOptions
                 }
 
 
-                if (AdvancedVehicleOptions.isGameLoaded) ConvertItems();
+                if (AdvancedVehicleOptions.isGameLoaded) DataToOptions();
             }
         }
 
-        private void ConvertOptions()
+        public void OptionsToData()
         {
             if (options == null) return;
 
@@ -182,7 +240,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        private void ConvertItems()
+        public void DataToOptions()
         {
             if (data == null) return;
 

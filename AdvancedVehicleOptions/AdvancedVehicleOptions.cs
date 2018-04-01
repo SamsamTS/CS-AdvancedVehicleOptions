@@ -6,17 +6,29 @@ using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 
 using ColossalFramework;
 using ColossalFramework.Threading;
 using ColossalFramework.UI;
-using ColossalFramework.Globalization;
 
 namespace AdvancedVehicleOptions
 {
     public class ModInfo : IUserMod
     {
+        public ModInfo()
+        {
+            try
+            {
+                // Creating setting file
+                GameSettings.AddSettingsFile(new SettingsFile[] { new SettingsFile() { fileName = AdvancedVehicleOptions.settingsFileName } });
+            }
+            catch (Exception e)
+            {
+                DebugUtils.Log("Could load/create the setting file.");
+                DebugUtils.LogException(e);
+            }
+        }
+
         public string Name
         {
             get { return "Advanced Vehicle Options " + version; }
@@ -31,28 +43,20 @@ namespace AdvancedVehicleOptions
         {
             try
             {
-                AdvancedVehicleOptions.LoadConfig();
-
                 UICheckBox checkBox;
                 UIHelperBase group = helper.AddGroup(Name);
 
-                checkBox = (UICheckBox)group.AddCheckbox("Hide the user interface", AdvancedVehicleOptions.config.hideGUI, (b) =>
+                checkBox = (UICheckBox)group.AddCheckbox("Hide the user interface", AdvancedVehicleOptions.hideGUI.value, (b) =>
                 {
-                    if (AdvancedVehicleOptions.config.hideGUI != b)
-                    {
-                        AdvancedVehicleOptions.hideGUI = b;
-                        AdvancedVehicleOptions.SaveConfig();
-                    }
+                    AdvancedVehicleOptions.hideGUI.value = b;
+                    AdvancedVehicleOptions.UpdateGUI();
+
                 });
                 checkBox.tooltip = "Hide the UI completely if you feel like you are done with it\nand want to save the little bit of memory it takes\nEverything else will still be functional";
 
-                checkBox = (UICheckBox)group.AddCheckbox("Disable warning at map loading", !AdvancedVehicleOptions.config.onLoadCheck, (b) =>
+                checkBox = (UICheckBox)group.AddCheckbox("Disable warning at map loading", !AdvancedVehicleOptions.onLoadCheck.value, (b) =>
                 {
-                    if (AdvancedVehicleOptions.config.onLoadCheck == b)
-                    {
-                        AdvancedVehicleOptions.config.onLoadCheck = !b;
-                        AdvancedVehicleOptions.SaveConfig();
-                    }
+                    AdvancedVehicleOptions.onLoadCheck.value = !b;
                 });
                 checkBox.tooltip = "Disable service vehicle availability check at the loading of a map";
             }
@@ -63,7 +67,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.7.6";
+        public const string version = "1.8.0";
     }
 
     public class AdvancedVehicleOptionsLoader : LoadingExtensionBase
@@ -71,21 +75,6 @@ namespace AdvancedVehicleOptions
         private static AdvancedVehicleOptions instance;
 
         #region LoadingExtensionBase overrides
-        public override void OnCreated(ILoading loading)
-        {
-            try
-            {
-                // Storing default values ASAP (before any mods have the time to change values)
-                DefaultOptions.StoreAll();
-
-                // Creating a backup
-                AdvancedVehicleOptions.SaveBackup();
-            }
-            catch (Exception e)
-            {
-                DebugUtils.LogException(e);
-            }
-        }
         /// <summary>
         /// Called when the level (game, map editor, asset editor) is loaded
         /// </summary>
@@ -142,7 +131,9 @@ namespace AdvancedVehicleOptions
         {
             try
             {
-                //SaveConfig();
+                DebugUtils.Log("Restoring default values");
+                DefaultOptions.RestoreAll();
+                DefaultOptions.Clear();
 
                 if (instance != null)
                     GameObject.Destroy(instance);
@@ -154,25 +145,16 @@ namespace AdvancedVehicleOptions
                 DebugUtils.LogException(e);
             }
         }
-
-        public override void OnReleased()
-        {
-            try
-            {
-                DebugUtils.Log("Restoring default values");
-                DefaultOptions.RestoreAll();
-                DefaultOptions.Clear();
-            }
-            catch (Exception e)
-            {
-                DebugUtils.LogException(e);
-            }
-        }
         #endregion
     }
     
     public class AdvancedVehicleOptions : MonoBehaviour
     {
+        public const string settingsFileName = "AdvancedVehicleOptions";
+ 
+        public static SavedBool hideGUI = new SavedBool("hideGUI", settingsFileName, false, true);
+        public static SavedBool onLoadCheck = new SavedBool("onLoadCheck", settingsFileName, true, true);
+
         private static GUI.UIMainPanel m_mainPanel;
 
         private static VehicleInfo m_removeInfo;
@@ -188,14 +170,15 @@ namespace AdvancedVehicleOptions
             try
             {
                 // Loading config
-                AdvancedVehicleOptions.LoadConfig();
-                AdvancedVehicleOptions.CheckAllServicesValidity();
+                AdvancedVehicleOptions.InitConfig();
+
+                if (AdvancedVehicleOptions.onLoadCheck)
+                {
+                    AdvancedVehicleOptions.CheckAllServicesValidity();
+                }
 
                 m_mainPanel = GameObject.FindObjectOfType<GUI.UIMainPanel>();
-                if (m_mainPanel == null && !hideGUI)
-                {
-                    m_mainPanel = UIView.GetAView().AddUIComponent(typeof(GUI.UIMainPanel)) as GUI.UIMainPanel;
-                }
+                UpdateGUI();
             }
             catch (Exception e)
             {
@@ -206,65 +189,77 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public static bool hideGUI
+        public static void UpdateGUI()
         {
-            get { return config.hideGUI; }
-
-            set
+            if(!isGameLoaded) return;
+            
+            if(!hideGUI && m_mainPanel == null)
             {
-                if(config.hideGUI != value)
-                {
-                    config.hideGUI = value;
-                    if(!value && isGameLoaded)
-                    {
-                        // Creating GUI
-                        m_mainPanel = UIView.GetAView().AddUIComponent(typeof(GUI.UIMainPanel)) as GUI.UIMainPanel;
-                    }
-                    else if (value && isGameLoaded)
-                    {
-                        GameObject.Destroy(m_mainPanel);
-                    }
-                    AdvancedVehicleOptions.SaveConfig();
-                }
+                // Creating GUI
+                m_mainPanel = UIView.GetAView().AddUIComponent(typeof(GUI.UIMainPanel)) as GUI.UIMainPanel;
             }
-        }
-
-        public static void RestoreBackup()
-        {
-            if (!File.Exists(m_fileName + ".bak")) return;
-
-            File.Copy(m_fileName + ".bak", m_fileName, true);
-            DebugUtils.Log("Backup configuration file restored");
-        }
-
-        public static void SaveBackup()
-        {
-            if (!File.Exists(m_fileName)) return;
-
-            File.Copy(m_fileName, m_fileName + ".bak", true);
-            DebugUtils.Log("Backup configuration file created");
+            else if (hideGUI && m_mainPanel != null)
+            {
+                GameObject.Destroy(m_mainPanel);
+                m_mainPanel = null;
+            }
         }
 
         /// <summary>
-        /// Load and apply the configuration file
+        /// Init the configuration
         /// </summary>
-        public static void LoadConfig()
+        public static void InitConfig()
         {
-            if(!isGameLoaded)
-            {
-                if (File.Exists(m_fileName)) config.Deserialize(m_fileName);
-                return;
-            }
-
             // Store modded values
             DefaultOptions.StoreAllModded();
 
+            if(config.data != null)
+            {
+                config.DataToOptions();
+
+                // Remove unneeded options
+                List<VehicleOptions> optionsList = new List<VehicleOptions>();
+
+                for (uint i = 0; i < config.options.Length; i++)
+                {
+                    if (config.options[i] != null && config.options[i].prefab != null) optionsList.Add(config.options[i]);
+                }
+
+                config.options = optionsList.ToArray();
+            }
+            else if (File.Exists(m_fileName))
+            {
+                // Import config
+                ImportConfig();
+                return;                
+            }
+            else
+            {
+                DebugUtils.Log("No configuration found. Default values will be used.");
+            }
+
+            // Checking for new vehicles
+            CompileVehiclesList();
+
+            // Checking for conflicts
+            DefaultOptions.CheckForConflicts();
+
+            // Update existing vehicles
+            new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
+            new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
+
+            DebugUtils.Log("Configuration initialized");
+            LogVehicleListSteamID();
+        }
+
+        /// <summary>
+        /// Import the configuration file
+        /// </summary>
+        public static void ImportConfig()
+        {
             if (!File.Exists(m_fileName))
             {
-                DebugUtils.Log("Configuration file not found. Creating new configuration file.");
-
-                CreateConfig();
-
+                DebugUtils.Log("Configuration file not found.");
                 return;
             }
 
@@ -297,23 +292,20 @@ namespace AdvancedVehicleOptions
             new EnumerableActionThread(VehicleOptions.UpdateCapacityUnits);
             new EnumerableActionThread(VehicleOptions.UpdateBackEngines);
             
-            DebugUtils.Log("Configuration loaded");
+            DebugUtils.Log("Configuration imported");
             LogVehicleListSteamID();
         }
 
         /// <summary>
-        /// Save the configuration file
+        /// Export the configuration file
         /// </summary>
-        public static void SaveConfig()
+        public static void ExportConfig()
         {
-            config.version = ModInfo.version;
             config.Serialize(m_fileName);
         }
 
         public static void CheckAllServicesValidity()
         {
-            if (config == null || !config.onLoadCheck) return;
-
             string warning = "";
 
             for (int i = 0; i < (int)VehicleOptions.Category.Natural; i++)
@@ -438,41 +430,6 @@ namespace AdvancedVehicleOptions
             }
 
             return v;
-        }
-
-        private static void CreateConfig()
-        {
-            CompileVehiclesList();
-
-            // Loading old mods saves
-            List<OldMods.Vehicle> removerList = OldMods.VehicleRemoverMod.LoadConfig();
-            List<OldMods.VehicleColorInfo> colorList = OldMods.VehicleColorChangerMod.LoadConfig();
-
-            if (removerList != null || colorList != null)
-            {
-                for (int i = 0; i < config.options.Length; i++)
-                {
-                    if (removerList != null)
-                    {
-                        OldMods.Vehicle vehicle = removerList.Find((v) => { return v.name == config.options[i].name; });
-                        if (vehicle.name == config.options[i].name) config.options[i].enabled = vehicle.enabled;
-                    }
-
-                    if (colorList != null)
-                    {
-                        OldMods.VehicleColorInfo vehicle = colorList.Find((v) => { return v.name == config.options[i].name; });
-                        if (vehicle != null && vehicle.name == config.options[i].name)
-                        {
-                            config.options[i].color0 = vehicle.color0;
-                            config.options[i].color1 = vehicle.color1;
-                            config.options[i].color2 = vehicle.color2;
-                            config.options[i].color3 = vehicle.color3;
-                        }
-                    }
-                }
-            }
-
-            SaveConfig();
         }
 
         /// <summary>

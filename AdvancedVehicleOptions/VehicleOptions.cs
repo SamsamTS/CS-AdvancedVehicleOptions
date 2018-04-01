@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using ColossalFramework;
 using ColossalFramework.Threading;
 using ColossalFramework.Globalization;
 
@@ -346,8 +345,6 @@ namespace AdvancedVehicleOptions
 
         public static VehicleInfo prefabUpdateUnits = null;
         public static VehicleInfo prefabUpdateEngine = null;
-        //private static MethodInfo m_refreshTransferVehicles = typeof(VehicleManager).GetMethod("RefreshTransferVehicles", BindingFlags.Instance | BindingFlags.NonPublic);
-        //private static FieldInfo m_transferVehiclesDirty = typeof(VehicleManager).GetField("m_transferVehiclesDirty", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private VehicleInfo m_prefab = null;
         private VehicleInfo m_engine = null;
@@ -609,7 +606,10 @@ namespace AdvancedVehicleOptions
             }
             prefabUpdateUnits = null;
 
-            DebugUtils.Log("Modified capacity of " + count + " vehicle(s). Total unit count: " + CitizenManager.instance.m_unitCount + "/" + CitizenManager.MAX_UNIT_COUNT);
+            if (count > 0)
+            {
+                DebugUtils.Log("Modified capacity of " + count + " vehicle(s). Total unit count: " + CitizenManager.instance.m_unitCount + "/" + CitizenManager.MAX_UNIT_COUNT);
+            }
         }
 
         public static IEnumerator UpdateBackEngines(ThreadBase t)
@@ -694,9 +694,9 @@ namespace AdvancedVehicleOptions
 
         public int CompareTo(object o)
         {
-            if (o == null) return 1;
+            VehicleOptions options = o as VehicleOptions;
+            if (options == null) return 1;
 
-            VehicleOptions options = (VehicleOptions)o;
 
             int delta = category - options.category;
             if (delta == 0)
@@ -844,27 +844,6 @@ namespace AdvancedVehicleOptions
 
     public class DefaultOptions
     {
-        public class StoreDefault : MonoBehaviour
-        {
-            public void Awake()
-            {
-                StartCoroutine("Store");
-            }
-
-            private IEnumerator Store()
-            {
-                while (PrefabCollection<VehicleInfo>.GetPrefab(0) == null)
-                    yield return null;
-
-                DefaultOptions.Clear();
-                for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
-                    DefaultOptions.Store(PrefabCollection<VehicleInfo>.GetPrefab(i));
-
-                DebugUtils.Log("Default values stored");
-                Destroy(gameObject);
-            }
-        }
-
         private static Dictionary<string, VehicleInfo> m_prefabs = new Dictionary<string, VehicleInfo>();
         private static Dictionary<string, DefaultOptions> m_default = new Dictionary<string, DefaultOptions>();
         private static Dictionary<string, DefaultOptions> m_modded = new Dictionary<string, DefaultOptions>();
@@ -901,10 +880,11 @@ namespace AdvancedVehicleOptions
 
         public static void StoreAll()
         {
-            if (m_gameObject != null) GameObject.DestroyImmediate(m_gameObject);
+            DefaultOptions.Clear();
+            for (uint i = 0; i < PrefabCollection<VehicleInfo>.PrefabCount(); i++)
+                DefaultOptions.Store(PrefabCollection<VehicleInfo>.GetPrefab(i));
 
-            m_gameObject = new GameObject("AVO-StoreDefault");
-            m_gameObject.AddComponent<StoreDefault>();
+            DebugUtils.Log("Default values stored");
         }
 
         public static void StoreAllModded()

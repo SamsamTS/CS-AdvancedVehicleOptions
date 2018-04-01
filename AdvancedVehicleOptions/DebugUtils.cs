@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using ColossalFramework.Plugins;
 
 using System;
 
@@ -12,13 +11,13 @@ namespace AdvancedVehicleOptions
         public static void Message(string message)
         {
             Log(message);
-            DebugOutputPanel.AddMessage(PluginManager.MessageType.Message, modPrefix + message);
+            //DebugOutputPanel.AddMessage(PluginManager.MessageType.Message, modPrefix + message);
         }
 
         public static void Warning(string message)
         {
             Debug.LogWarning(modPrefix + message);
-            DebugOutputPanel.AddMessage(PluginManager.MessageType.Warning, modPrefix + message);
+            //DebugOutputPanel.AddMessage(PluginManager.MessageType.Warning, modPrefix + message);
         }
 
         public static void Log(string message)
