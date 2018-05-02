@@ -63,7 +63,6 @@ namespace AdvancedVehicleOptions
                 for (int i = 0; i < count; i++)
                 {
                     s.WriteUniqueString(options[i].name);
-                    DebugUtils.Log(options[i].name);
                     s.WriteBool(options[i].enabled);
                     s.WriteBool(options[i].addBackEngine);
                     s.WriteFloat(options[i].maxSpeed);
@@ -248,6 +247,8 @@ namespace AdvancedVehicleOptions
 
             for (int i = 0; i < data.Length; i++)
             {
+                if (data[i].name == null) continue;
+
                 options[i] = new VehicleOptions();
                 options[i].name = data[i].name;
                 options[i].enabled = data[i].enabled;

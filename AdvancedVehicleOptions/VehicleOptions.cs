@@ -54,6 +54,8 @@ namespace AdvancedVehicleOptions
             get { return m_prefab.name; }
             set
             {
+                if(value == null) return;
+                
                 VehicleInfo prefab = PrefabCollection<VehicleInfo>.FindLoaded(value);
                 if (prefab == null)
                     DebugUtils.Log("Couldn't find " + value);
