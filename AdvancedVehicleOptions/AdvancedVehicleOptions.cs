@@ -24,7 +24,7 @@ namespace AdvancedVehicleOptions
             }
             catch (Exception e)
             {
-                DebugUtils.Log("Could load/create the setting file.");
+                DebugUtils.Log("Couldn't load/create the setting file.");
                 DebugUtils.LogException(e);
             }
         }
@@ -46,6 +46,14 @@ namespace AdvancedVehicleOptions
                 UICheckBox checkBox;
                 UIHelperBase group = helper.AddGroup(Name);
 
+                checkBox = (UICheckBox)group.AddCheckbox("Disable debug messages logging", DebugUtils.hideDebugMessages.value, (b) =>
+                {
+                    DebugUtils.hideDebugMessages.value = b;
+                });
+                checkBox.tooltip = "If checked, debug messages won't be logged.";
+
+                group.AddSpace(10);
+
                 checkBox = (UICheckBox)group.AddCheckbox("Hide the user interface", AdvancedVehicleOptions.hideGUI.value, (b) =>
                 {
                     AdvancedVehicleOptions.hideGUI.value = b;
@@ -59,6 +67,7 @@ namespace AdvancedVehicleOptions
                     AdvancedVehicleOptions.onLoadCheck.value = !b;
                 });
                 checkBox.tooltip = "Disable service vehicle availability check at the loading of a map";
+
             }
             catch (Exception e)
             {
@@ -67,7 +76,7 @@ namespace AdvancedVehicleOptions
             }
         }
 
-        public const string version = "1.8.1";
+        public const string version = "1.8.2";
     }
 
     public class AdvancedVehicleOptionsLoader : LoadingExtensionBase
@@ -93,7 +102,7 @@ namespace AdvancedVehicleOptions
 
                 if (instance != null)
                 {
-                    GameObject.DestroyImmediate(instance);
+                    GameObject.DestroyImmediate(instance.gameObject);
                 }
 
                 instance = new GameObject("AdvancedVehicleOptions").AddComponent<AdvancedVehicleOptions>();
@@ -109,7 +118,7 @@ namespace AdvancedVehicleOptions
                     DebugUtils.Log("Could not create UIMainPanel");
 
                     if (instance != null)
-                        GameObject.Destroy(instance);
+                        GameObject.Destroy(instance.gameObject);
 
                     return;
                 }
@@ -119,7 +128,7 @@ namespace AdvancedVehicleOptions
             catch (Exception e)
             {
                 if (instance != null)
-                    GameObject.Destroy(instance);
+                    GameObject.Destroy(instance.gameObject);
                 DebugUtils.LogException(e);
             }
         }
@@ -136,7 +145,7 @@ namespace AdvancedVehicleOptions
                 DefaultOptions.Clear();
 
                 if (instance != null)
-                    GameObject.Destroy(instance);
+                    GameObject.Destroy(instance.gameObject);
 
                 AdvancedVehicleOptions.isGameLoaded = false;
             }
@@ -200,7 +209,7 @@ namespace AdvancedVehicleOptions
             }
             else if (hideGUI && m_mainPanel != null)
             {
-                GameObject.Destroy(m_mainPanel);
+                GameObject.Destroy(m_mainPanel.gameObject);
                 m_mainPanel = null;
             }
         }
@@ -424,8 +433,7 @@ namespace AdvancedVehicleOptions
             for (int i = 0; i < t.Length; i++)
             {
                 v *= 100;
-                int a = 0;
-                if(int.TryParse(t[i], out a))
+                if (int.TryParse(t[i], out int a))
                     v += a;
             }
 

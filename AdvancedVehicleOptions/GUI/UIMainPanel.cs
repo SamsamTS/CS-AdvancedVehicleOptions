@@ -39,8 +39,8 @@ namespace AdvancedVehicleOptions.GUI
             "Healthcare", "Deathcare", "Garbage", "Maintenance",
             "Taxi", "Bus", "Metro", "Tram", "Monorail", "CableCar",
             "Cargo Train", "Passenger Train",
-            "Cargo Ship", "Passenger Ship", "Plane", "Monument",
-            "Natural" };
+            "Cargo Ship", "Passenger Ship", "Plane", "Tours",
+            "Monument", "Natural" };
 
         public static readonly string[] vehicleIconList = { "IconCitizenVehicle", "IconCitizenBicycleVehicle",
               "IconPolicyForest", "IconPolicyFarming", "IconPolicyOre", "IconPolicyOil", "IconPolicyNone",
@@ -48,8 +48,8 @@ namespace AdvancedVehicleOptions.GUI
               "ToolbarIconHealthcare", "ToolbarIconHealthcareHovered", "InfoIconGarbage", "InfoIconMaintenance",
               "SubBarPublicTransportTaxi", "SubBarPublicTransportBus", "SubBarPublicTransportMetro", "SubBarPublicTransportTram", "SubBarPublicTransportMonorail", "SubBarPublicTransportCableCar",
               "IconServiceVehicle", "SubBarPublicTransportTrain",
-              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane", "ToolbarIconMonuments",
-              "InfoIconMeteorstrike"};
+              "IconCargoShip", "SubBarPublicTransportShip", "SubBarPublicTransportPlane", "SubBarPublicTransportTours",
+              "ToolbarIconMonuments", "SubBarFireDepartmentDisaster"};
 
         public UIOptionPanel optionPanel
         {
@@ -165,21 +165,21 @@ namespace AdvancedVehicleOptions.GUI
                 DebugUtils.Log("UI initialization failed.");
                 DebugUtils.LogException(e);
 
-                if (m_button != null) GameObject.Destroy(m_button.gameObject);
+                if (m_button != null) Destroy(m_button.gameObject);
 
-                GameObject.Destroy(gameObject);
+                Destroy(gameObject);
             }
         }
 
-        public override void OnDestroy()
+        /*public override void OnDestroy()
         {
             base.OnDestroy();
 
             DebugUtils.Log("Destroying UIMainPanel");
 
-            if (m_button != null) GameObject.Destroy(m_button);
+            if (m_button != null) GameObject.Destroy(m_button.gameObject);
             GameObject.Destroy(m_optionPanel.gameObject);
-        }
+        }*/
 
         private void SetupControls()
         {

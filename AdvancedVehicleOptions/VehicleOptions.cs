@@ -31,7 +31,7 @@ namespace AdvancedVehicleOptions
             Healthcare,
             Deathcare,
             Garbage,
-            Road,
+            Maintenance,
             TransportTaxi,
             TransportBus,
             TransportMetro,
@@ -43,6 +43,7 @@ namespace AdvancedVehicleOptions
             CargoShip,
             TransportShip,
             TransportPlane,
+            TransportTours,
             Monument,
             Natural
         }
@@ -426,7 +427,7 @@ namespace AdvancedVehicleOptions
                         return Category.Garbage;
                     case ItemClass.Service.Water:
                     case ItemClass.Service.Road:
-                        return Category.Road;
+                        return Category.Maintenance;
                     case ItemClass.Service.Disaster:
                         return Category.Disaster;
                     case ItemClass.Service.Monument:
@@ -454,6 +455,8 @@ namespace AdvancedVehicleOptions
                             return Category.CargoShip;
                     case ItemClass.SubService.PublicTransportTaxi:
                         return Category.TransportTaxi;
+                    case ItemClass.SubService.PublicTransportTours:
+                        return Category.TransportTours;
                     case ItemClass.SubService.PublicTransportPlane:
                         return Category.TransportPlane;
                     case ItemClass.SubService.IndustrialForestry:
@@ -474,6 +477,8 @@ namespace AdvancedVehicleOptions
                         return Category.CableCar;
                     case ItemClass.SubService.ResidentialHigh:
                         return Category.Bicycle;
+                    case ItemClass.SubService.BeautificationParks:
+                        return Category.Maintenance;
                 }
 
                 return Category.Citizen;
@@ -849,7 +854,6 @@ namespace AdvancedVehicleOptions
         private static Dictionary<string, VehicleInfo> m_prefabs = new Dictionary<string, VehicleInfo>();
         private static Dictionary<string, DefaultOptions> m_default = new Dictionary<string, DefaultOptions>();
         private static Dictionary<string, DefaultOptions> m_modded = new Dictionary<string, DefaultOptions>();
-        private static GameObject m_gameObject;
 
         public static ItemClass.Placement GetPlacementStyle(VehicleInfo prefab)
         {

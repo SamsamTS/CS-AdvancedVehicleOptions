@@ -17,7 +17,7 @@ namespace AdvancedVehicleOptions
             m_camera.fieldOfView = 30f;
             m_camera.nearClipPlane = 1f;
             m_camera.farClipPlane = 1000f;
-            m_camera.hdr = true;
+            m_camera.allowHDR = true;
             m_camera.enabled = false;
             m_camera.targetTexture = new RenderTexture(512, 512, 24, RenderTextureFormat.ARGB32);
             m_camera.pixelRect = new Rect(0f, 0f, 512, 512);

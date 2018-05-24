@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using ColossalFramework;
 
 using System;
 
@@ -8,27 +9,19 @@ namespace AdvancedVehicleOptions
     {
         public const string modPrefix = "[Advanced Vehicle Options "+ModInfo.version+"] ";
 
-        public static void Message(string message)
-        {
-            Log(message);
-            //DebugOutputPanel.AddMessage(PluginManager.MessageType.Message, modPrefix + message);
-        }
-
-        public static void Warning(string message)
-        {
-            Debug.LogWarning(modPrefix + message);
-            //DebugOutputPanel.AddMessage(PluginManager.MessageType.Warning, modPrefix + message);
-        }
+        public static SavedBool hideDebugMessages = new SavedBool("hideDebugMessages", AdvancedVehicleOptions.settingsFileName, true, true);
 
         public static void Log(string message)
         {
+            if (hideDebugMessages.value) return;
+
             if (message == m_lastLog)
             {
                 m_duplicates++;
             }
-            else if(m_duplicates > 0)
+            else if (m_duplicates > 0)
             {
-                Debug.Log(modPrefix + "(x" + (m_duplicates + 1) + ")");
+                Debug.Log(modPrefix + m_lastLog + "(x" + (m_duplicates + 1) + ")");
                 Debug.Log(modPrefix + message);
                 m_duplicates = 0;
             }
@@ -39,12 +32,22 @@ namespace AdvancedVehicleOptions
             m_lastLog = message;
         }
 
+        public static void Warning(string message)
+        {
+            if (message != m_lastWarning)
+            {
+                Debug.LogWarning(modPrefix + "Warning: " + message);
+            }
+            m_lastWarning = message;
+        }
+
         public static void LogException(Exception e)
         {
-            Log("Intercepted exception (not game breaking):");
+            Debug.LogError(modPrefix + "Intercepted exception (not game breaking):");
             Debug.LogException(e);
         }
 
+        private static string m_lastWarning;
         private static string m_lastLog;
         private static int m_duplicates = 0;
     }
