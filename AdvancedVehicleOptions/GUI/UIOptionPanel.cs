@@ -8,6 +8,8 @@ namespace AdvancedVehicleOptions.GUI
 {
     public class UIOptionPanel : UIPanel
     {
+        private const float maxSpeedToKmhConversionFactor = 6.25f;
+
         private UITextField m_maxSpeed;
         private UITextField m_acceleration;
         private UITextField m_braking;
@@ -60,7 +62,7 @@ namespace AdvancedVehicleOptions.GUI
             m_color2.relativePosition = new Vector3(158, 95 - 2);
             m_color3.relativePosition = new Vector3(158, 120 - 2);
 
-            m_maxSpeed.text = Mathf.RoundToInt(options.maxSpeed * 5).ToString();
+            m_maxSpeed.text = Mathf.RoundToInt(options.maxSpeed * maxSpeedToKmhConversionFactor).ToString();
             m_acceleration.text = options.acceleration.ToString();
             m_braking.text = options.braking.ToString();
             m_useColors.isChecked = options.useColorVariations;
@@ -349,7 +351,7 @@ namespace AdvancedVehicleOptions.GUI
             if (!m_initialized || m_options == null) return;
             m_initialized = false;
 
-            m_options.maxSpeed = float.Parse(text) / 5f;
+            m_options.maxSpeed = float.Parse(text) / maxSpeedToKmhConversionFactor;
 
             m_initialized = true;
         }
